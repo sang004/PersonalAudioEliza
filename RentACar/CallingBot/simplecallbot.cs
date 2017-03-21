@@ -31,6 +31,21 @@ namespace callbot
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
+            ///TEST
+            string user = "user";
+            string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+
+            RSAPI test2 = new RSAPI(user, private_key);
+            //test2.UploadResource("C:\\Users\\user\\Downloads\\BOT\\Guitar_2.mp3", "testmusictitle", "3");
+            test2.Call();
+
+            //foreach (string collectionId1 in new string[] { "8", "9", "10", "11", "13", "14", "15" })
+            //{
+            //    Console.WriteLine(collectionId1);
+            //    test2.DeleteCollection(collectionId1);
+            //}
+
+
             this.CallingBotService = callingBotService;
 
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;

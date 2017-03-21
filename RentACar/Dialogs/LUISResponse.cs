@@ -25,7 +25,7 @@ namespace callbot
         public string name { get; set; }
         public Parameters[] parameters { get; set; }
     }
-    class Parameters
+    class LUISParameters
     {
         public string name { get; set; }
         public string required { get; set; }
