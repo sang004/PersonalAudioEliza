@@ -129,6 +129,7 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="CallingBot\BingSpeech.cs" />
     <Compile Include="CallingBot\BotToUserSpeech.cs" />
+    <Compile Include="CallingBot\RSAPI.cs" />
     <Compile Include="Controllers\CallingController.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Dialogs\AskLUIS.cs" />
