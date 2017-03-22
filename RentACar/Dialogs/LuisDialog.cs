@@ -25,7 +25,9 @@ namespace callbot.Dialogs
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("Microsoft, why is the documentation so unclear?");
+            //await context.PostAsync("Microsoft, why is the documentation so unclear?");
+            await context.PostAsync("Meh");
+
             context.Wait(MessageReceived);            
         }
 

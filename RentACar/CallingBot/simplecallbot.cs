@@ -31,21 +31,6 @@ namespace callbot
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
-            ///TEST
-            string user = "user";
-            string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
-
-            RSAPI test2 = new RSAPI(user, private_key);
-            //test2.UploadResource("C:\\Users\\user\\Downloads\\BOT\\Guitar_2.mp3", "testmusictitle", "3");
-            test2.Call();
-
-            //foreach (string collectionId1 in new string[] { "8", "9", "10", "11", "13", "14", "15" })
-            //{
-            //    Console.WriteLine(collectionId1);
-            //    test2.DeleteCollection(collectionId1);
-            //}
-
-
             this.CallingBotService = callingBotService;
 
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
@@ -91,6 +76,7 @@ namespace callbot
 
         private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
+            // get response from LUIS in text form
             if (response.Count > 0)
             {
                 silenceTimes = 0;
@@ -99,7 +85,17 @@ namespace callbot
                 {
                     Debug.WriteLine($"Response ----- {res}");
                 }
-                actionList.Add(GetPromptForText(response));
+
+                // start playback of response
+                ///TEST
+                string user = "user";
+                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+
+                RSAPI test2 = new RSAPI(user, private_key);
+                string replyAudioPath =  test2.Call("meh").Result;
+                actionList.Add(PlayAudioFile(replyAudioPath));
+
+                //actionList.Add(GetPromptForText(response));
                 actionList.Add(GetRecordForText(string.Empty));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 response.Clear();
@@ -142,7 +138,11 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-                var record = await recordOutcomeEvent.RecordedContent;
+                //TEST AUDIO input
+                byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
+                System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+
+                var record = streams;//await recordOutcomeEvent.RecordedContent;//streams;//
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
@@ -186,9 +186,11 @@ namespace callbot
             return Task.FromResult(true);
         }
 
-        private static PlayPrompt PlayAudioFile(string text)
+        // TEST playback
+        private static PlayPrompt PlayAudioFile( string audioPath)
         {
-            System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
+            //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
+            System.Uri uri = new System.Uri(audioPath);
 
             var prompt = new Prompt { FileUri = uri };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };

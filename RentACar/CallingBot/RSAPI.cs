@@ -101,6 +101,7 @@ namespace callbot
         public async Task<string> GetResourceFolder(string resourceId, string extension)
         {
             string folerPath = "Empty";
+            string modFullPath = "";
             string fullPath = await CallAPI("get_resource_path", parameter.GetResourcePath(resourceId, extension));
             if (!string.IsNullOrEmpty(fullPath))
             {
@@ -108,8 +109,10 @@ namespace callbot
                 // escape the double quote in the two ends of the string
                 // escape the file name because it is the same as the folder name which is not correct
                 folerPath = string.Join("", fullPathList.Skip(1).Take(fullPathList.Count() - 2));
+
+                modFullPath = fullPath.Replace("__", "_").Replace("\\", "");
             }
-            return fullPath;//folerPath;
+            return modFullPath;//folerPath;
         }
 
         public async Task<string> CreateCollection(string collectionName)
@@ -157,17 +160,20 @@ namespace callbot
         /// <summary>
         /// An example to use the async method that returns values.
         /// </summary>
-        public async void Call()
+        public async Task<String> Call( string keyword )
         {
             //fetch collection
             
-            string jsonResponse = await searchFile("meh");
+            string jsonResponse = await searchFile(keyword);
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
             string extension = jsonList[0].file_extension;
             string resourceID = jsonList[0].@ref;
             string path = await GetResourceFolder(resourceID, extension);
             Debug.WriteLine("Path:" + path);
+
+            
+            return path;
 
             // Create a collection 
             //string collectionID = await CreateCollection("566");
@@ -226,12 +232,12 @@ namespace callbot
         {
             string getFilePath = "false";  // to get url"true";
             string size = "";
-            string generate = "true";
+            string generate = "";
             string page = "";
             string watermarked = "";
             string alternative = "";
-            parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}&param6={5}&param7={6}&param8={7}",
-                         resourceId, getFilePath, size, generate, extension, page, watermarked, alternative);
+            parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}",
+                         resourceId, getFilePath, size, generate, extension);
             return parameters;
         }
 
