@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.IO;
 
 
 using Newtonsoft.Json;
@@ -84,11 +85,24 @@ namespace callbot
         /// is installed.</remark>
         public async void UploadResource(string filePath, string title, string collectionId)
         {
-            //Console.WriteLine("start!");
-            string resourceId = await CallAPI("create_resource", parameter.CreateResource("4"));
-            //Console.WriteLine("reID"+resourceId);
+            string resourceType = "";
+
+            string extension = Path.GetExtension(filePath);
+            if (extension == ".mp3" || extension == ".wav")
+            {
+                resourceType = "4";
+                Console.WriteLine(extension);
+            }
+            else{
+                resourceType = "2";
+            }
+
+            //TEST
+            filePath = "C:\\Users\\user\\Downloads\\BOT\\LOL.txt\\BotApplication1.txt"; 
+
+            string resourceId = await CallAPI("create_resource", parameter.CreateResource(resourceType));
             string uploadSuccess = await CallAPI("upload_file", parameter.UploadFile(resourceId, filePath));
-            //Console.WriteLine("upload"+uploadSuccess);
+
             if (uploadSuccess.Equals("true"))
             {
                 await CallAPI("update_field", parameter.UpdateField(resourceId, "8", title));
@@ -248,7 +262,11 @@ namespace callbot
 
         public string CreateResource(string resourceType)
         {
-            parameters = String.Format("param1={0}", resourceType);
+            string archive = "2";
+            string revert = "";
+
+            parameters = String.Format("param1={0}&prarm2={1}&param5={2}",
+                resourceType, archive, revert);
             return parameters;
         }
 
@@ -257,7 +275,7 @@ namespace callbot
             string noExif = "1";
             string revert = "";
             string autorotate = "1";
-            parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}",
+            parameters = String.Format("param1={0}&param5={4}",
                          resourceId, noExif, revert, autorotate, filePath);
             return parameters;
         }
