@@ -28,6 +28,7 @@ namespace callbot
 
         public simplecallbot(ICallingBotService callingBotService)
         {
+
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
