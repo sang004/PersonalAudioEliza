@@ -21,10 +21,10 @@ namespace callbot
         }
 
         private List<string> response = new List<string>();
-
         int silenceTimes = 0;
-
         bool sttFailed = false;
+        static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -84,6 +84,8 @@ namespace callbot
                 var actionList = new List<ActionBase>();
                 foreach (var res in response)
                 {
+                    logger.WriteToText("USER: ", res);
+
                     Debug.WriteLine($"Response ----- {res}");
                 }
 
@@ -183,6 +185,7 @@ namespace callbot
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
+            logger.uploadToRS();
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
@@ -199,7 +202,9 @@ namespace callbot
 
         private static PlayPrompt GetPromptForText(string text)
         {
-
+            logger.WriteToText("BOT: ", text);
+            logger.uploadToRS();
+            
             var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
@@ -209,6 +214,8 @@ namespace callbot
             var prompts = new List<Prompt>();
             foreach (var txt in text)
             {
+                logger.WriteToText("BOT: ", txt);
+
                 if (!string.IsNullOrEmpty(txt))
                     prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
             }
@@ -223,4 +230,8 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
     }
+
+
 }
+
+
