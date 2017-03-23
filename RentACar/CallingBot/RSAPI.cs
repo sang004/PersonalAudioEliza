@@ -9,6 +9,8 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+
 
 using Newtonsoft.Json;
 
@@ -105,12 +107,15 @@ namespace callbot
             string fullPath = await CallAPI("get_resource_path", parameter.GetResourcePath(resourceId, extension));
             if (!string.IsNullOrEmpty(fullPath))
             {
-                List<string> fullPathList = fullPath.Split('\\').ToList();
+                //List<string> fullPathList = fullPath.Split('\\').ToList();
                 // escape the double quote in the two ends of the string
                 // escape the file name because it is the same as the folder name which is not correct
-                folerPath = string.Join("", fullPathList.Skip(1).Take(fullPathList.Count() - 2));
-
-                modFullPath = fullPath.Replace("__", "_").Replace("\\", "");
+                //folerPath = string.Join("", fullPathList.Skip(1).Take(fullPathList.Count() - 2));
+                
+                // Process and extract http link from string
+                modFullPath = fullPath.Replace("__", "_").Replace("\\", "").Replace("\"", "");
+                //MatchCollection ms = Regex.Matches(modFullPath, @"(www.+|http.+)([\s]|$)");
+                //modFullPath = ms[0].Value.ToString();
             }
             return modFullPath;//folerPath;
         }
