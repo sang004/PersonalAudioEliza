@@ -58,7 +58,8 @@ namespace callbot
             RSAPI test2 = new RSAPI(user, private_key);
 
             string fileTitle = "ConversationLog_" + DateTime.Now.ToString(DatetimeFormat);
-            test2.UploadResource(Filename, fileTitle, "3");
+
+            test2.UploadResource(Filename, fileTitle);
 
 
         }
