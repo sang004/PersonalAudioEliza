@@ -12,7 +12,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.IO;
 
-
+using WinSCP;
 using Newtonsoft.Json;
 
 namespace callbot
@@ -55,7 +55,7 @@ namespace callbot
         /// <summary>
         /// Call the API with the url.
         /// </summary>
-        /// <returns>The response of the API calling or "Request Failed" if the API calling fails.</returns>
+        /// <returns>The response of the API calling or "Request Failed"bitnami  if the API calling fails.</returns>
         public async Task<string> CallAPI(string functionName, string parameters)
         {
             FormQuery(functionName, parameters);
@@ -83,25 +83,28 @@ namespace callbot
         /// <param name="filePath">Original file path on the server</param>
         /// <remark>The original file to be uploaded by this function has to be on the same server where ResourceSpace
         /// is installed.</remark>
-        public async void UploadResource(string filePath, string title, string collectionId)
+        public async void UploadResource(string filePath, string title)
         {
             string resourceType = "";
+            string collectionId = "";
 
             string extension = Path.GetExtension(filePath);
             if (extension == ".mp3" || extension == ".wav")
             {
                 resourceType = "4";
+                collectionId = "6";
                 Console.WriteLine(extension);
             }
             else{
                 resourceType = "2";
+                collectionId = "5";
             }
 
-            //TEST
-            filePath = "C:\\Users\\user\\Downloads\\BOT\\LOL.txt\\BotApplication1.txt"; 
+            // get sftp path on resource space server
+            string rsPath = sstpProtocol(filePath);
 
             string resourceId = await CallAPI("create_resource", parameter.CreateResource(resourceType));
-            string uploadSuccess = await CallAPI("upload_file", parameter.UploadFile(resourceId, filePath));
+            string uploadSuccess = await CallAPI("upload_file", parameter.UploadFile(resourceId, rsPath));
 
             if (uploadSuccess.Equals("true"))
             {
@@ -121,17 +124,10 @@ namespace callbot
             string fullPath = await CallAPI("get_resource_path", parameter.GetResourcePath(resourceId, extension));
             if (!string.IsNullOrEmpty(fullPath))
             {
-                //List<string> fullPathList = fullPath.Split('\\').ToList();
-                // escape the double quote in the two ends of the string
-                // escape the file name because it is the same as the folder name which is not correct
-                //folerPath = string.Join("", fullPathList.Skip(1).Take(fullPathList.Count() - 2));
-                
-                // Process and extract http link from string
+                // Edit url to a correct http format
                 modFullPath = fullPath.Replace("__", "_").Replace("\\", "").Replace("\"", "");
-                //MatchCollection ms = Regex.Matches(modFullPath, @"(www.+|http.+)([\s]|$)");
-                //modFullPath = ms[0].Value.ToString();
             }
-            return modFullPath;//folerPath;
+            return modFullPath;
         }
 
         public async Task<string> CreateCollection(string collectionName)
@@ -166,13 +162,13 @@ namespace callbot
 
         public async Task<String> searchFile(string searchInput)
         {
-
+            // use do_search api call to search using string and return json
             string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput));
             if (!string.IsNullOrEmpty(jsonResponse))
             {
                 Debug.WriteLine(jsonResponse);
             }
-            return jsonResponse;//folerPath;
+            return jsonResponse;
 
         }
 
@@ -182,7 +178,6 @@ namespace callbot
         public async Task<String> Call( string keyword )
         {
             //fetch collection
-            
             string jsonResponse = await searchFile(keyword);
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
@@ -191,7 +186,6 @@ namespace callbot
             string path = await GetResourceFolder(resourceID, extension);
             Debug.WriteLine("Path:" + path);
 
-            
             return path;
 
             // Create a collection 
@@ -220,7 +214,64 @@ namespace callbot
         //    Console.ReadKey();
         //}
 
+        public string sstpProtocol( string local_filePath )
+        {
+            string fileExtension = local_filePath.Split('.').Last();
+            string remote_fileName = "";
+            string remote_filePath = "";
+            string DatetimeFormat;
+
+            DatetimeFormat = "yyyy-MM-dd_HH-mm";
+            remote_fileName = "ChatLog_" + DateTime.Now.ToString(DatetimeFormat) + "." + fileExtension;
+            remote_filePath = $"/home/bitnami/test/{remote_fileName}";
+
+            try
+            {
+                // Setup session options
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = "52.187.186.3",
+                    UserName = "bitnami",
+                    Password = "8dyZ!B)-4JM}",
+                    SshHostKeyFingerprint = "ssh-rsa 2048 c4:0b:99:e9:53:a4:1a:af:24:e1:8c:f5:44:a7:13:ff"
+                };
+
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+
+                    // Upload files
+                    TransferOptions transferOptions = new TransferOptions();
+                    transferOptions.TransferMode = TransferMode.Binary;
+
+                    TransferOperationResult transferResult;
+                    transferResult = session.PutFiles(local_filePath, remote_filePath, false, transferOptions);
+
+                    // Throw on any error
+                    transferResult.Check();
+
+                    // Print results
+                    foreach (TransferEventArgs transfer in transferResult.Transfers)
+                    {
+                        Console.WriteLine("Upload of {0} succeeded", transfer.FileName);
+                    }
+                }
+
+                return remote_filePath;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: {0}", e);
+                return "Error" ;
+            }
+
+        }
+
     }
+
+    
 
     /// <summary>
     /// Form the parameters string.
@@ -275,7 +326,7 @@ namespace callbot
             string noExif = "1";
             string revert = "";
             string autorotate = "1";
-            parameters = String.Format("param1={0}&param5={4}",
+            parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}",
                          resourceId, noExif, revert, autorotate, filePath);
             return parameters;
         }
