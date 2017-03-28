@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -87,16 +88,17 @@ namespace callbot
                     logger.WriteToText("USER: ", res);
 
                     Debug.WriteLine($"Response ----- {res}");
+
+                    // start playback of response
+                    ///TEST
+                    string user = "user";
+                    string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+
+                    RSAPI test2 = new RSAPI(user, private_key);
+                    string replyAudioPath = test2.Call(res).Result;
+                    actionList.Add(PlayAudioFile(replyAudioPath));
+
                 }
-
-                // start playback of response
-                ///TEST
-                string user = "user";
-                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
-
-                RSAPI test2 = new RSAPI(user, private_key);
-                string replyAudioPath = test2.Call("meh").Result;
-                actionList.Add(PlayAudioFile(replyAudioPath));
 
                 //actionList.Add(GetPromptForText(response));
                 actionList.Add(GetRecordForText(string.Empty));
@@ -142,7 +144,17 @@ namespace callbot
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
                 //TEST AUDIO input
-                byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
+                ///Retrieve random audio
+                string user = "user";
+                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+
+                RSAPI test2 = new RSAPI(user, private_key);
+                string replyAudioPath = test2.Call("sample").Result;
+
+                var webClient = new WebClient();
+                byte[] bytes = webClient.DownloadData(replyAudioPath);
+
+                //byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
                 System.IO.Stream streams = new System.IO.MemoryStream(bytes);
 
                 var record = streams;//await recordOutcomeEvent.RecordedContent;//streams;//
