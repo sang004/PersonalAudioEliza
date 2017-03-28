@@ -26,6 +26,8 @@ namespace callbot
         public string queryUrl;
         public Parameters parameter = new Parameters();
 
+        // TEST _ toggle random audio input from RS
+        const string mode = "demo";
 
         public RSAPI(string username, string userPrivateKey)
         {
@@ -177,12 +179,23 @@ namespace callbot
         /// </summary>
         public async Task<String> Call( string keyword )
         {
-            //fetch collection
+            string extension = "";
+            string resourceID = "";
+            int eleIdx = 0;
+
+            //fetch audio files based on keywords
             string jsonResponse = await searchFile(keyword);
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
-            string extension = jsonList[0].file_extension;
-            string resourceID = jsonList[0].@ref;
+            if (mode == "demo")
+            {
+                Random rnd = new Random();
+                eleIdx = rnd.Next(jsonList.Count);
+
+            }
+
+            extension = jsonList[eleIdx].file_extension;
+            resourceID = jsonList[eleIdx].@ref;
             string path = await GetResourceFolder(resourceID, extension);
             Debug.WriteLine("Path:" + path);
 
