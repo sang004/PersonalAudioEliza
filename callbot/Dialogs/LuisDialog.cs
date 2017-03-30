@@ -66,33 +66,6 @@ namespace callbot.Dialogs
             context.Wait(MessageReceived);
         }
 
-        //[LuisIntent("CallChildren")]
-        //public async Task Rent(IDialogContext context, LuisResult result)
-        //{
-        //    var entities = new List<EntityRecommendation>(result.Entities);
-        //    foreach (var entity in result.Entities)
-        //    {
-        //        switch (entity.Type)
-        //        {
-        //            case PickLocationEntityType:
-        //                entities.Add(new EntityRecommendation(type: nameof(MsgForm.PickLocation)) { Entity = entity.Entity });
-        //                break;
-        //            case PickDateEntityType:
-        //                EntityRecommendation pickTime;
-        //                result.TryFindEntity(PickTimeEntityType, out pickTime);
-        //                var pickDateAndTime = entity.Entity + " " + pickTime?.Entity;
-        //                if (!string.IsNullOrWhiteSpace(pickDateAndTime))
-        //                    entities.Add(new EntityRecommendation(type: nameof(MsgForm.PickDateAndTime)) { Entity = pickDateAndTime });
-        //                break;
-        //            default:
-        //                break;
-        //        }
-        //    }
-
-        //    var MsgForm = new FormDialog<MsgForm>(new MsgForm(), MsgForm.BuildForm, FormOptions.PromptInStart, entities);
-        //    context.Call(MsgForm, RentComplete);
-        //}
-
         private static bool showMatch(string text, string expr)
         {
             Console.WriteLine("The Expression: " + expr);
@@ -107,29 +80,5 @@ namespace callbot.Dialogs
             }
         }
 
-        private async Task RentComplete(IDialogContext context, IAwaitable<MsgForm> result)
-        {
-            try
-            {
-                var form = await result;
-
-                await context.PostAsync($"Your reservation is confirmed");
-
-                context.Wait(MessageReceived);
-            }
-            catch (Exception e)
-            {
-                string reply;
-                if (e.InnerException == null)
-                {
-                    reply = $"You quit --maybe you can finish next time!";
-                }
-                else
-                {
-                    reply = "Sorry, I've had a short circuit.  Please try again.";
-                }
-                await context.PostAsync(reply);
-            }
-        }
     }
 }
