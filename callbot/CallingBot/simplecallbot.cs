@@ -24,7 +24,7 @@ namespace callbot
         private List<string> response = new List<string>();
         int silenceTimes = 0;
         bool sttFailed = false;
-        static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+        //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
 
 
         public simplecallbot(ICallingBotService callingBotService)
@@ -85,9 +85,9 @@ namespace callbot
                 var actionList = new List<ActionBase>();
                 foreach (var res in response)
                 {
-                    logger.WriteToText("USER: ", res);
+                    //logger.WriteToText("USER: ", res);
 
-                    Debug.WriteLine($"Response ----- {res}");
+                    //Debug.WriteLine($"Response ----- {res}");
                     
 
                 }
@@ -204,7 +204,7 @@ namespace callbot
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
-            logger.uploadToRS();
+            //logger.uploadToRS();
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
@@ -226,8 +226,8 @@ namespace callbot
         {
 
             System.Uri uri;
-            logger.WriteToText("BOT: ", text);
-            logger.uploadToRS();
+            //logger.WriteToText("BOT: ", text);
+            //logger.uploadToRS();
             if (mode == 1)
             {
                 uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
@@ -260,7 +260,7 @@ namespace callbot
             var prompts = new List<Prompt>();
             foreach (var txt in text)
             {
-                logger.WriteToText("BOT: ", txt);
+                //logger.WriteToText("BOT: ", txt);
 
                 if (!string.IsNullOrEmpty(txt))
                     prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
