@@ -24,7 +24,7 @@ namespace callbot
         private List<string> response = new List<string>();
         int silenceTimes = 0;
         bool sttFailed = false;
-        //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+        static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
 
 
         public simplecallbot(ICallingBotService callingBotService)
@@ -85,7 +85,7 @@ namespace callbot
                 var actionList = new List<ActionBase>();
                 foreach (var res in response)
                 {
-                    //logger.WriteToText("USER: ", res);
+                    logger.WriteToText("USER: ", res);
 
                     //Debug.WriteLine($"Response ----- {res}");
                     
@@ -148,22 +148,22 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-                //TEST AUDIO input
+                //TEST AUDIO START
                 ///Retrieve random audio
                 string user = "user";
                 string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
 
-                //RSAPI test2 = new RSAPI(user, private_key);
-               // string replyAudioPath = test2.Call("sample").Result;
+                RSAPI test2 = new RSAPI(user, private_key);
+                string replyAudioPath = test2.Call("sample").Result;
 
-                //var webClient = new WebClient();
-                //byte[] bytes = webClient.DownloadData(replyAudioPath);
+                var webClient = new WebClient();
+                byte[] bytes = webClient.DownloadData(replyAudioPath);
 
-                //byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
-               // System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+                System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+                var record = streams;
+                //TEST AUDIO END
 
-                var record = await recordOutcomeEvent.RecordedContent;
-                //var record = streams;
+                //var record = await recordOutcomeEvent.RecordedContent;
 
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
@@ -226,7 +226,7 @@ namespace callbot
         {
 
             System.Uri uri;
-            //logger.WriteToText("BOT: ", text);
+            logger.WriteToText("BOT: ", text);
             //logger.uploadToRS();
             if (mode == 1)
             {
@@ -260,7 +260,7 @@ namespace callbot
             var prompts = new List<Prompt>();
             foreach (var txt in text)
             {
-                //logger.WriteToText("BOT: ", txt);
+                logger.WriteToText("BOT: ", txt);
 
                 if (!string.IsNullOrEmpty(txt))
                     prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
