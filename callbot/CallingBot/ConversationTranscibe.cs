@@ -41,7 +41,7 @@ namespace callbot
             DateTime date = DateTime.Today;
             DateTime dateLogEntry = DateTime.Now;
             // This creates a reference to the append blob we are going to use.
-            fileName = string.Format("{0}{1}", date.ToString("yyyyMMdd"), ".txt");
+            fileName = string.Format("{0}{1}", date.ToString("yyyyMMdd_HHmm"), ".txt");
             appBlob = container.GetAppendBlobReference(fileName);
 
             // Now we are going to check if todays file exists and if it doesn't we create it.
@@ -71,7 +71,7 @@ namespace callbot
             string private_key = ConfigurationManager.AppSettings["RSPassword"];
             
             RSAPI rs = new RSAPI(user, private_key);
-            string fileTitle = "ConversationLog_" + DateTime.Now.ToString(DatetimeFormat);
+            string fileTitle = "ConversationLog_" + appBlob.Name;
 
             rs.UploadResource(localfile, fileTitle);
         }
