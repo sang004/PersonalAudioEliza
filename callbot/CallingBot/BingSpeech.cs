@@ -2,29 +2,17 @@
 using Microsoft.Bot.Connector;
 using Microsoft.CognitiveServices.SpeechRecognition;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Web;
 using Autofac;
 using System.Threading;
-using static callbot.MessagesController;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder.Calling.ObjectModel.Contracts;
 
-using Microsoft.Bot.Builder.Dialogs;
 using Newtonsoft.Json;
 using System.Net.Http;
-
-using System.Threading.Tasks;
-
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Web;
-using static System.Console;
-using System.Diagnostics;
-
 
 namespace callbot
 {
@@ -122,7 +110,7 @@ namespace callbot
             {
                 From = new ChannelAccount { Id = conversationResult.Id },
                 Conversation = new ConversationAccount { Id = conversationResult.Id },
-                Recipient = new ChannelAccount { Id = "testcall" },
+                Recipient = new ChannelAccount { Id = "callbot_dev" },
                 ServiceUrl = "https://skype.botframework.com",
                 ChannelId = "skype",
             };
