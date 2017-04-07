@@ -17,7 +17,7 @@ namespace callbot.Dialogs
     [LuisModel("9f9431ae-4a39-4ac2-861a-b5ee265f5424", "3368b24c1b4b488d8ee845e7f47a53cd")]
     public class LuisDialog: LuisDialog<object>
     {
-        
+
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
@@ -53,6 +53,24 @@ namespace callbot.Dialogs
         [LuisIntent("MedicHelp")]
         public async Task MedicHelp(IDialogContext context, LuisResult result)
         {
+
+            //var entities = new List<EntityRecommendation>(result.Entities);
+            //foreach (var entity in result.Entities)
+            //{
+            //    switch (entity.Type)
+            //    {
+            //        case "MedicDescription":
+            //            //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
+            //            break;
+            //        case "BodyPart":
+            //            EntityRecommendation painLevel;
+            //            result.TryFindEntity("BodyPart", out painLevel);
+            //            break;
+            //        default:
+            //            break;
+            //    }
+            //}
+
             await context.PostAsync("health");
 
 
