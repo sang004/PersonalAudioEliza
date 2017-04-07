@@ -76,7 +76,7 @@ namespace callbot
             };
         }
 
-        private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
+        private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             // get response from LUIS in text form
             if (response.Count > 0)
@@ -100,9 +100,9 @@ namespace callbot
                 RSAPI test2 = new RSAPI(user, private_key);
 
                 // edit this to await
-                System.Threading.Thread.Sleep(5000);
+                // System.Threading.Thread.Sleep(5000);
 
-                string replyAudioPath = test2.Call(response[0]).Result;
+                string replyAudioPath = await test2.Call(response[0]);
                 actionList.Add(PlayAudioFile(replyAudioPath));
 
                 //actionList.Add(GetPromptForText(response));
@@ -150,20 +150,22 @@ namespace callbot
             {
                 //TEST AUDIO input
                 ///Retrieve random audio
-                string user = "user";
-                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+                //string user = "user";
+                //string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
 
                 //RSAPI test2 = new RSAPI(user, private_key);
-               // string replyAudioPath = test2.Call("sample").Result;
+                //string replyAudioPath = await test2.Call("sample");
 
                 //var webClient = new WebClient();
                 //byte[] bytes = webClient.DownloadData(replyAudioPath);
 
                 //byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
-               // System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+                //System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+                //var record = streams;
+
+                //TEST AUDIO END
 
                 var record = await recordOutcomeEvent.RecordedContent;
-                //var record = streams;
 
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
