@@ -10,7 +10,7 @@ using Autofac;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder.Calling.ObjectModel.Contracts;
-
+using System.Configuration;
 using Newtonsoft.Json;
 using System.Net.Http;
 
@@ -36,7 +36,8 @@ namespace callbot
         }
 
         public string DefaultLocale { get; } = "en-US";
-        public string SubscriptionKey { get; } = "c246088cf41c43648b4c7c80184e755c";
+        public string SubscriptionKey { get; } = ConfigurationManager.AppSettings["BingKey"];
+
         public void CreateDataRecoClient()
         {
             this.dataClient = SpeechRecognitionServiceFactory.CreateDataClient(
@@ -197,30 +198,30 @@ namespace callbot
             Debug.WriteLine(formattedStr);
         }
 
-        ////TEST
-        static async Task<LUISResponse> askLUIS(string question, string contextId)
-        {
-            using (var client = new HttpClient())
-            {
-                client.BaseAddress = new Uri("https://api.projectoxford.ai");
+        //////TEST
+        //static async Task<LUISResponse> askLUIS(string question, string contextId)
+        //{
+        //    using (var client = new HttpClient())
+        //    {
+        //        client.BaseAddress = new Uri("https://api.projectoxford.ai");
            
-                string id = "9f9431ae-4a39-4ac2-861a-b5ee265f5424";
-                string subscriptionKey = "3368b24c1b4b488d8ee845e7f47a53cd";
-                string requestUri = "";
+        //        string id = "9f9431ae-4a39-4ac2-861a-b5ee265f5424";
+        //        string subscriptionKey = "3368b24c1b4b488d8ee845e7f47a53cd";
+        //        string requestUri = "";
 
-                if (contextId == "")
-                {
-                    requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&timezoneOffset=8.0&verbose=true";
-                }
-                else
-                {
-                    requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&contextId={contextId}";
-                }
-                Debug.WriteLine(requestUri);
-                HttpResponseMessage response = await client.GetAsync(requestUri);
+        //        if (contextId == "")
+        //        {
+        //            requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&timezoneOffset=8.0&verbose=true";
+        //        }
+        //        else
+        //        {
+        //            requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&contextId={contextId}";
+        //        }
+        //        Debug.WriteLine(requestUri);
+        //        HttpResponseMessage response = await client.GetAsync(requestUri);
 
-                return JsonConvert.DeserializeObject<LUISResponse>(await response.Content.ReadAsStringAsync());
-            }
-        }
+        //        return JsonConvert.DeserializeObject<LUISResponse>(await response.Content.ReadAsStringAsync());
+        //    }
+        //}
     }
 }

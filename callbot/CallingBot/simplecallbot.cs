@@ -10,6 +10,8 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.Configuration;
+
 using SSS = System.Speech.Synthesis;
 
 namespace callbot
@@ -25,7 +27,6 @@ namespace callbot
         int silenceTimes = 0;
         bool sttFailed = false;
         static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
-
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -78,33 +79,28 @@ namespace callbot
 
         private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
+            string user = ConfigurationManager.AppSettings["RSId"];
+            string private_key = ConfigurationManager.AppSettings["RSPassword"];
+            RSAPI rsapi = new RSAPI(user, private_key);
+
             // get response from LUIS in text form
             if (response.Count > 0)
             {
                 silenceTimes = 0;
                 var actionList = new List<ActionBase>();
+
+                // there might be multiple replies from LUIS
                 foreach (var res in response)
                 {
                     logger.WriteToText("USER: ", res);
+                    Debug.WriteLine($"Response ----- {res}");
 
-                    //Debug.WriteLine($"Response ----- {res}");
-                    
+                    //use rs object to fetch appropriate url for audio based on each result given
+                    string replyAudioPath = rsapi.Call(res).Result;
+                    actionList.Add(PlayAudioFile(replyAudioPath));
 
                 }
-                // start playback of response
-                ///TEST
-                string user = "user";
-                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
-
-
-                RSAPI test2 = new RSAPI(user, private_key);
-
-                // edit this to await
-                System.Threading.Thread.Sleep(5000);
-
-                string replyAudioPath = test2.Call(response[0]).Result;
-                actionList.Add(PlayAudioFile(replyAudioPath));
-
+                                
                 //actionList.Add(GetPromptForText(response));
                 actionList.Add(GetRecordForText(string.Empty,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
@@ -148,10 +144,12 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
+
+#if DEBUG
                 //TEST AUDIO START
-                ///Retrieve random audio
-                string user = "user";
-                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
+                ///Retrieve random audio            
+                string user = ConfigurationManager.AppSettings["RSId"];
+                string private_key = ConfigurationManager.AppSettings["RSPassword"];
 
                 RSAPI test2 = new RSAPI(user, private_key);
                 string replyAudioPath = test2.Call("sample").Result;
@@ -163,8 +161,9 @@ namespace callbot
                 var record = streams;
                 //TEST AUDIO END
 
-                //var record = await recordOutcomeEvent.RecordedContent;
-
+#else
+                var record = await recordOutcomeEvent.RecordedContent;
+#endif
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
@@ -175,6 +174,10 @@ namespace callbot
                 {
                     GetSilencePrompt()
                 };
+
+            } else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated") {
+                //So if the caller hangs up, initiate hangout on bot
+                new Hangup() { OperationId = Guid.NewGuid().ToString() };
 
             }
             else
@@ -204,7 +207,7 @@ namespace callbot
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
-            //logger.uploadToRS();
+            logger.uploadToRS();
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
@@ -214,8 +217,6 @@ namespace callbot
         {
 
             //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
-
-
             System.Uri uri = new System.Uri(audioPath);
             
             var prompt = new Prompt { FileUri = uri };
@@ -227,7 +228,6 @@ namespace callbot
 
             System.Uri uri;
             logger.WriteToText("BOT: ", text);
-            //logger.uploadToRS();
             if (mode == 1)
             {
                 uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
@@ -249,7 +249,6 @@ namespace callbot
             else {
                 var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
                 return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
 
             }
 
