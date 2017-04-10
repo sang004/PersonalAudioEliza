@@ -94,7 +94,9 @@ namespace callbot
             // Send to bot
             if (e.PhraseResponse.RecognitionStatus == RecognitionStatus.RecognitionSuccess)
             {
-                await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault());
+                await SendToBot(e.PhraseResponse.Results[0]);
+
+                //await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).Last());
                 //responseJson = e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault().DisplayText;
                 //Debug.WriteLine("responseJson");
                 //Debug.WriteLine(responseJson);
@@ -115,9 +117,7 @@ namespace callbot
                 ServiceUrl = "https://skype.botframework.com",
                 ChannelId = "skype",
             };
-
             activity.Text = recognizedPhrase.DisplayText;
-
             ////TEST START
 
             //LUISResponse luisResponse = new LUISResponse();

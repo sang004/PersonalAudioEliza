@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using System.Configuration;
 
 using SSS = System.Speech.Synthesis;
+using NAudio.Wave;
+using System.IO;
 
 namespace callbot
 {
@@ -35,6 +37,7 @@ namespace callbot
                 throw new ArgumentNullException(nameof(callingBotService));
 
             this.CallingBotService = callingBotService;
+            
 
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
@@ -83,6 +86,8 @@ namespace callbot
             string private_key = ConfigurationManager.AppSettings["RSPassword"];
             RSAPI rsapi = new RSAPI(user, private_key);
 
+            List<string> audioArr = new List<string>();
+
             // get response from LUIS in text form
             if (response.Count > 0)
             {
@@ -96,11 +101,13 @@ namespace callbot
                     Debug.WriteLine($"Response ----- {res}");
 
                     //use rs object to fetch appropriate url for audio based on each result given
-                    string replyAudioPath = rsapi.Call(res).Result;
-                    actionList.Add(PlayAudioFile(replyAudioPath));
-
+                    audioArr.Add( rsapi.Call(res).Result);
+                    
                 }
-                                
+                audioMan am = new audioMan(audioArr);
+                actionList.Add(PlayAudioFile(am.azureUrl));
+
+
                 //actionList.Add(GetPromptForText(response));
                 actionList.Add(GetRecordForText(string.Empty,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
@@ -151,9 +158,11 @@ namespace callbot
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
 
-                RSAPI test2 = new RSAPI(user, private_key);
-                string replyAudioPath = test2.Call("sample").Result;
+                //RSAPI test2 = new RSAPI(user, private_key);
+                //string replyAudioPath = test2.Call("sample").Result;
 
+                string replyAudioPath = "http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/1/1/9_82633649062982a/119_9940cf736bc80f7.wav";
+                
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
 
@@ -167,7 +176,7 @@ namespace callbot
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
-
+                
                 //AskLUIS test = new AskLUIS();
                 //String response = test.questionLUIS(activity.Text);
                 recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -211,6 +220,66 @@ namespace callbot
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
+
+        //public static void ConcatenateAudio(IEnumerable<string> sourceFiles)
+        //{
+        //    byte[] buffer = new byte[1024];
+        //    WaveFileWriter waveFileWriter = null;
+
+        //    //get temp directory path  
+        //    string tempPath = Path.GetTempPath();
+        //    string output = $"{tempPath}b.wav";
+
+        //    try
+        //    {
+        //        foreach (string sourceFile in sourceFiles)
+        //        {
+        //            string realPath = $"{tempPath}a.wav";
+        //            using (var client = new WebClient())
+        //            {
+        //                client.DownloadFile(sourceFile, realPath);
+        //            }
+
+        //            using (WaveFileReader reader = new WaveFileReader(realPath))
+        //            {
+        //                if (waveFileWriter == null)
+        //                {
+        //                    // first time in create new Writer
+        //                    waveFileWriter = new WaveFileWriter(output, reader.WaveFormat);
+        //                }
+        //                else
+        //                {
+        //                    if (!reader.WaveFormat.Equals(waveFileWriter.WaveFormat))
+        //                    {
+        //                        throw new InvalidOperationException("Can't concatenate WAV Files that don't share the same format");
+        //                    }
+        //                }
+
+        //                int read;
+        //                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
+        //                {
+        //                    waveFileWriter.Write(buffer, 0, read);
+        //                }
+        //            }
+        //            //remove file from temp storage after use
+        //            File.Delete(realPath);
+
+        //        }
+        //    }
+        //    catch {
+        //        Console.WriteLine("ERROR LOH");
+
+        //    }
+        //    finally
+        //    {
+        //        if (waveFileWriter != null)
+        //        {
+        //            waveFileWriter.Dispose();
+        //        }
+        //    }
+        //    Console.WriteLine("done");
+        //    audioMan am = new audioMan(output); 
+        //}
 
         // TEST playback
         private static PlayPrompt PlayAudioFile(string audioPath)
