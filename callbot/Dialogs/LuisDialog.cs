@@ -17,14 +17,14 @@ namespace callbot.Dialogs
     [LuisModel("9f9431ae-4a39-4ac2-861a-b5ee265f5424", "3368b24c1b4b488d8ee845e7f47a53cd")]
     public class LuisDialog: LuisDialog<object>
     {
-
+        
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
             //await context.PostAsync("Microsoft, why is the documentation so unclear?");
             await context.PostAsync("None");
 
-            context.Wait(MessageReceived);            
+            context.Wait(MessageReceived);  
         }
 
         [LuisIntent("AboutMe")]
@@ -54,24 +54,40 @@ namespace callbot.Dialogs
         public async Task MedicHelp(IDialogContext context, LuisResult result)
         {
 
-            //var entities = new List<EntityRecommendation>(result.Entities);
-            //foreach (var entity in result.Entities)
-            //{
-            //    switch (entity.Type)
-            //    {
-            //        case "MedicDescription":
-            //            //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
-            //            break;
-            //        case "BodyPart":
-            //            EntityRecommendation painLevel;
-            //            result.TryFindEntity("BodyPart", out painLevel);
-            //            break;
-            //        default:
-            //            break;
-            //    }
-            //}
+            var entities = new List<EntityRecommendation>(result.Entities);
+            foreach (var entity in result.Entities)
+            {
+                switch (entity.Type)
+                {
+                    case "MedicDescription":
+                        //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
+                        EntityRecommendation sick;
+                        if (result.TryFindEntity("MedicDescription", out sick)) {
+                            await context.PostAsync(@"feelsick");
+                        }
 
-            await context.PostAsync("health");
+                        break;
+                    case "BodyPart":
+                        EntityRecommendation bleed;
+                        if (result.TryFindEntity("BodyPart", out bleed)) {
+                            await context.PostAsync(@"feelsick");
+                        }
+
+                        break;
+                    
+                    // so if it cannot identify any useful entity type, use entity word itself to rephrase into a question.
+                    case "Noun":
+                        string word = entity.Entity;
+                        await context.PostAsync(@"What is {word}");
+
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            await context.PostAsync(@"feelsick");
+
 
 
             //await context.PostAsync(@"Oh my, are you alright?");
@@ -90,6 +106,26 @@ namespace callbot.Dialogs
         [LuisIntent("Bored")]
         public async Task Bored(IDialogContext context, LuisResult result)
         {
+            var entities = new List<EntityRecommendation>(result.Entities);
+            foreach (var entity in result.Entities)
+            {
+                switch (entity.Type)
+                {
+                    case "MedicDescription":
+                        //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
+                        EntityRecommendation painLevel;
+                        result.TryFindEntity("BodyPart", out painLevel);
+                        break;
+                    case "BodyPart":
+                        EntityRecommendation bleed;
+                        result.TryFindEntity("BodyPart", out bleed);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+
             await context.PostAsync("hum");
 
             context.Wait(MessageReceived);
@@ -108,6 +144,7 @@ namespace callbot.Dialogs
                 return false;
             }
         }
+
 
     }
 }
