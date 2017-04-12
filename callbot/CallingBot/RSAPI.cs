@@ -121,7 +121,6 @@ namespace callbot
         /// <returns>The server path to the folder that contains the resource file</returns>
         public async Task<string> GetResourceFolder(string resourceId, string extension)
         {
-            string folerPath = "Empty";
             string modFullPath = "";
             string fullPath = await CallAPI("get_resource_path", parameter.GetResourcePath(resourceId, extension));
             if (!string.IsNullOrEmpty(fullPath))
@@ -298,6 +297,7 @@ namespace callbot
             parameters = "";
         }
 
+
         public string DoSearch( string searchStr, string resTypes ) {
             string orderby = "title";
             string archive = "0";
@@ -315,9 +315,7 @@ namespace callbot
             string getFilePath = "false";  // to get url"true";
             string size = "";
             string generate = "";
-            string page = "";
-            string watermarked = "";
-            string alternative = "";
+
             parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}",
                          resourceId, getFilePath, size, generate, extension);
             return parameters;
