@@ -161,10 +161,10 @@ namespace callbot
             }
         }
 
-        public async Task<String> searchFile(string searchInput)
+        public async Task<String> searchFile(string searchInput, string resTypes)
         {
             // use do_search api call to search using string and return json
-            string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput));
+            string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput, resTypes));
             if (!string.IsNullOrEmpty(jsonResponse))
             {
                 Debug.WriteLine(jsonResponse);
@@ -183,7 +183,7 @@ namespace callbot
             int eleIdx = 0;
 
             //fetch audio files based on keywords
-            string jsonResponse = await searchFile(keyword);
+            string jsonResponse = await searchFile(keyword, "4");
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
             if (mode == "demo")
@@ -297,10 +297,15 @@ namespace callbot
             parameters = "";
         }
 
-        public string DoSearch( string searchStr ) {
 
-            parameters = String.Format("param1={0}",
-                         searchStr);
+        public string DoSearch( string searchStr, string resTypes ) {
+            string orderby = "title";
+            string archive = "0";
+            string fetchrows = "";
+            string sort = "desc";
+
+            parameters = String.Format("param1={0}&param2={1}&param3={2}",
+                         searchStr, resTypes, orderby);
 
             return parameters;
         }
