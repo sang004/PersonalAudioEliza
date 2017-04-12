@@ -101,7 +101,7 @@ namespace callbot
                     Debug.WriteLine($"Response ----- {res}");
 
                     //use rs object to fetch appropriate url for audio based on each result given
-                    audioArr.Add( rsapi.Call(res).Result);
+                    audioArr.Add( rsapi.Call("mp3test").Result);
                     
                 }
                 audioMan am = new audioMan(audioArr);
@@ -220,66 +220,6 @@ namespace callbot
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
-
-        //public static void ConcatenateAudio(IEnumerable<string> sourceFiles)
-        //{
-        //    byte[] buffer = new byte[1024];
-        //    WaveFileWriter waveFileWriter = null;
-
-        //    //get temp directory path  
-        //    string tempPath = Path.GetTempPath();
-        //    string output = $"{tempPath}b.wav";
-
-        //    try
-        //    {
-        //        foreach (string sourceFile in sourceFiles)
-        //        {
-        //            string realPath = $"{tempPath}a.wav";
-        //            using (var client = new WebClient())
-        //            {
-        //                client.DownloadFile(sourceFile, realPath);
-        //            }
-
-        //            using (WaveFileReader reader = new WaveFileReader(realPath))
-        //            {
-        //                if (waveFileWriter == null)
-        //                {
-        //                    // first time in create new Writer
-        //                    waveFileWriter = new WaveFileWriter(output, reader.WaveFormat);
-        //                }
-        //                else
-        //                {
-        //                    if (!reader.WaveFormat.Equals(waveFileWriter.WaveFormat))
-        //                    {
-        //                        throw new InvalidOperationException("Can't concatenate WAV Files that don't share the same format");
-        //                    }
-        //                }
-
-        //                int read;
-        //                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
-        //                {
-        //                    waveFileWriter.Write(buffer, 0, read);
-        //                }
-        //            }
-        //            //remove file from temp storage after use
-        //            File.Delete(realPath);
-
-        //        }
-        //    }
-        //    catch {
-        //        Console.WriteLine("ERROR LOH");
-
-        //    }
-        //    finally
-        //    {
-        //        if (waveFileWriter != null)
-        //        {
-        //            waveFileWriter.Dispose();
-        //        }
-        //    }
-        //    Console.WriteLine("done");
-        //    audioMan am = new audioMan(output); 
-        //}
 
         // TEST playback
         private static PlayPrompt PlayAudioFile(string audioPath)

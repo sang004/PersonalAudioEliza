@@ -63,7 +63,7 @@ namespace callbot.Dialogs
                         //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
                         EntityRecommendation sick;
                         if (result.TryFindEntity("MedicDescription", out sick)) {
-                            await context.PostAsync(@"feelsick");
+                            await context.PostAsync(@"hum");
                         }
 
                         break;
