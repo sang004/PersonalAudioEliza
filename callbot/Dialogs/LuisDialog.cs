@@ -18,15 +18,11 @@ namespace callbot.Dialogs
     public class LuisDialog: LuisDialog<object>
     {
         
-        private const string PickDateEntityType = "builtin.datetime.date";
-        private const string PickTimeEntityType = "builtin.datetime.time";
-        private const string PickLocationEntityType = "builtin.geography.city";
-
         [LuisIntent("None")]
         public async Task None(IDialogContext context, LuisResult result)
         {
             //await context.PostAsync("Microsoft, why is the documentation so unclear?");
-            await context.PostAsync("Meh");
+            await context.PostAsync("None");
 
             context.Wait(MessageReceived);            
         }
@@ -34,18 +30,22 @@ namespace callbot.Dialogs
         [LuisIntent("AboutMe")]
         public async Task AboutMe(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync(@"Hello, I am one");
-            await context.PostAsync(@"I am none, I am all");
-            
+            await context.PostAsync("What");
+
+            //await context.PostAsync(@"Hello, I am one");
+            //await context.PostAsync(@"I am none, I am all");
+
             context.Wait(MessageReceived);
         }
 
         [LuisIntent("CallChildren")]
         public async Task CallChildren(IDialogContext context, LuisResult result)
         {
-            if (showMatch(result.Query, "call") == true) {
-                await context.PostAsync(@"Caretaker is busy now...");
-            }
+            await context.PostAsync("Comfort");
+
+            //if (showMatch(result.Query, "call") == true) {
+            //    await context.PostAsync(@"Caretaker is busy now...");
+            //}
 
             context.Wait(MessageReceived);
         }
@@ -53,15 +53,26 @@ namespace callbot.Dialogs
         [LuisIntent("MedicHelp")]
         public async Task MedicHelp(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync(@"Oh my, are you alright?");
-            if (showMatch(result.Query, "dizzy") == true)
-            {
-                await context.PostAsync(@"Lie down and raise your legs up");
-            }
-            if (showMatch(result.Query, "pain") == true)
-            {
-                await context.PostAsync(@"Drink some water and a panadol");
-            }
+            await context.PostAsync("health");
+
+
+            //await context.PostAsync(@"Oh my, are you alright?");
+            //if (showMatch(result.Query, "dizzy") == true)
+            //{
+            //    await context.PostAsync(@"Lie down and raise your legs up");
+            //}
+            //if (showMatch(result.Query, "pain") == true)
+            //{
+            //    await context.PostAsync(@"Drink some water and a panadol");
+            //}
+
+            context.Wait(MessageReceived);
+        }
+
+        [LuisIntent("Bored")]
+        public async Task Bored(IDialogContext context, LuisResult result)
+        {
+            await context.PostAsync("hum");
 
             context.Wait(MessageReceived);
         }

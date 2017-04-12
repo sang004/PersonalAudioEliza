@@ -150,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+    <None Include="Properties\PublishProfiles\BotApp01Name - Web Deploy.pubxml" />
     <None Include="Properties\PublishProfiles\BotApp01Name.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
