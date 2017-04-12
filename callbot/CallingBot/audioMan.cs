@@ -20,14 +20,29 @@ namespace callbot
         public string fileName { get; set; }
         public string azureUrl { get; set; }
 
-        private string output;
+        private string output { get; set; }
 
         public audioMan(List<string> audioPaths) {
 
-            ConcatenateAudio(audioPaths);
-            azureFunc(output);
-        }
+            string tempPath = Path.GetTempPath();
 
+            output = $"{tempPath}output.mp3";
+
+            // check if file is already there, if yes, delete
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
+
+            // for wav
+            //ConcatenateAudio(audioPaths, output);
+            
+            //for mp3
+            ConcatenateAudio_mp3(audioPaths, output);
+
+            azureFunc(output);
+            
+        }
 
         private void azureFunc(string localPath)
         {
@@ -71,14 +86,13 @@ namespace callbot
 
         }
 
-        private void ConcatenateAudio(IEnumerable<string> sourceFiles)
+        private void ConcatenateAudio_wav(IEnumerable<string> sourceFiles, string outputPath)
         {
             byte[] buffer = new byte[1024];
             WaveFileWriter waveFileWriter = null;
 
             //get temp directory path  
             string tempPath = Path.GetTempPath();
-            output = $"{tempPath}b.wav";
 
             try
             {
@@ -95,12 +109,12 @@ namespace callbot
                         if (waveFileWriter == null)
                         {
                             // first time in create new Writer
-                            waveFileWriter = new WaveFileWriter(output, reader.WaveFormat);
+                            waveFileWriter = new WaveFileWriter(outputPath, reader.WaveFormat);
                         }
                         else
                         {
                             if (!reader.WaveFormat.Equals(waveFileWriter.WaveFormat))
-                            {
+                            {   
                                 throw new InvalidOperationException("Can't concatenate WAV Files that don't share the same format");
                             }
                         }
@@ -131,7 +145,49 @@ namespace callbot
             Console.WriteLine("done");
             
         }
-     
+
+        private void ConcatenateAudio_mp3(List<string> inputFiles, string outputPath)
+        {
+            System.IO.Stream output = new System.IO.MemoryStream();
+            
+            //get temp directory path  
+            string tempPath = Path.GetTempPath();
+            int idx = 0;
+            foreach (string file in inputFiles)
+            {
+                string realPath = $"{tempPath}temp.mp3";
+                
+                using (var client = new WebClient())
+                {
+                    client.DownloadFile(file, realPath);
+                }
+
+
+                Mp3FileReader reader = new Mp3FileReader(realPath);
+                if ((output.Position == 0) && (reader.Id3v2Tag != null))
+                {
+                    output.Write(reader.Id3v2Tag.RawData, 0, reader.Id3v2Tag.RawData.Length);
+                }
+                Mp3Frame frame;
+                while ((frame = reader.ReadNextFrame()) != null)
+                {
+                    output.Write(frame.RawData, 0, frame.RawData.Length);
+                }
+
+                reader.Close();
+
+                File.Delete(realPath);
+            }
+            
+            using (var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.ReadWrite))
+            {
+                output.Position = 0;
+                output.CopyTo(fileStream); // fileStream is not populated
+            }
+
+        }
+        
+
 
     }
 }
