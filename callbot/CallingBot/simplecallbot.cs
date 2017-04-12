@@ -80,7 +80,7 @@ namespace callbot
             };
         }
 
-        private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
+        private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             string user = ConfigurationManager.AppSettings["RSId"];
             string private_key = ConfigurationManager.AppSettings["RSPassword"];
@@ -106,7 +106,6 @@ namespace callbot
                 }
                 audioMan am = new audioMan(audioArr);
                 actionList.Add(PlayAudioFile(am.azureUrl));
-
 
                 //actionList.Add(GetPromptForText(response));
                 actionList.Add(GetRecordForText(string.Empty,-1));
@@ -161,6 +160,7 @@ namespace callbot
                 //RSAPI test2 = new RSAPI(user, private_key);
                 //string replyAudioPath = test2.Call("sample").Result;
 
+
                 string replyAudioPath = "http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/1/1/9_82633649062982a/119_9940cf736bc80f7.wav";
                 
                 var webClient = new WebClient();
@@ -168,11 +168,13 @@ namespace callbot
 
                 System.IO.Stream streams = new System.IO.MemoryStream(bytes);
                 var record = streams;
+
                 //TEST AUDIO END
 
 #else
                 var record = await recordOutcomeEvent.RecordedContent;
 #endif
+
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
