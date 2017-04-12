@@ -2,29 +2,17 @@
 using Microsoft.Bot.Connector;
 using Microsoft.CognitiveServices.SpeechRecognition;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Web;
 using Autofac;
 using System.Threading;
-using static callbot.MessagesController;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder.Calling.ObjectModel.Contracts;
-
-using Microsoft.Bot.Builder.Dialogs;
+using System.Configuration;
 using Newtonsoft.Json;
 using System.Net.Http;
-
-using System.Threading.Tasks;
-
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Web;
-using static System.Console;
-using System.Diagnostics;
-
 
 namespace callbot
 {
@@ -48,7 +36,8 @@ namespace callbot
         }
 
         public string DefaultLocale { get; } = "en-US";
-        public string SubscriptionKey { get; } = "c246088cf41c43648b4c7c80184e755c";
+        public string SubscriptionKey { get; } = ConfigurationManager.AppSettings["BingKey"];
+
         public void CreateDataRecoClient()
         {
             this.dataClient = SpeechRecognitionServiceFactory.CreateDataClient(
@@ -105,7 +94,9 @@ namespace callbot
             // Send to bot
             if (e.PhraseResponse.RecognitionStatus == RecognitionStatus.RecognitionSuccess)
             {
-                await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault());
+                await SendToBot(e.PhraseResponse.Results[0]);
+
+                //await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).Last());
                 //responseJson = e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault().DisplayText;
                 //Debug.WriteLine("responseJson");
                 //Debug.WriteLine(responseJson);
@@ -122,13 +113,11 @@ namespace callbot
             {
                 From = new ChannelAccount { Id = conversationResult.Id },
                 Conversation = new ConversationAccount { Id = conversationResult.Id },
-                Recipient = new ChannelAccount { Id = "testcall" },
+                Recipient = new ChannelAccount { Id = "callbot_dev" },
                 ServiceUrl = "https://skype.botframework.com",
                 ChannelId = "skype",
             };
-
             activity.Text = recognizedPhrase.DisplayText;
-
             ////TEST START
 
             //LUISResponse luisResponse = new LUISResponse();
@@ -209,30 +198,30 @@ namespace callbot
             Debug.WriteLine(formattedStr);
         }
 
-        ////TEST
-        static async Task<LUISResponse> askLUIS(string question, string contextId)
-        {
-            using (var client = new HttpClient())
-            {
-                client.BaseAddress = new Uri("https://api.projectoxford.ai");
+        //////TEST
+        //static async Task<LUISResponse> askLUIS(string question, string contextId)
+        //{
+        //    using (var client = new HttpClient())
+        //    {
+        //        client.BaseAddress = new Uri("https://api.projectoxford.ai");
            
-                string id = "9f9431ae-4a39-4ac2-861a-b5ee265f5424";
-                string subscriptionKey = "3368b24c1b4b488d8ee845e7f47a53cd";
-                string requestUri = "";
+        //        string id = "9f9431ae-4a39-4ac2-861a-b5ee265f5424";
+        //        string subscriptionKey = "3368b24c1b4b488d8ee845e7f47a53cd";
+        //        string requestUri = "";
 
-                if (contextId == "")
-                {
-                    requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&timezoneOffset=8.0&verbose=true";
-                }
-                else
-                {
-                    requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&contextId={contextId}";
-                }
-                Debug.WriteLine(requestUri);
-                HttpResponseMessage response = await client.GetAsync(requestUri);
+        //        if (contextId == "")
+        //        {
+        //            requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&timezoneOffset=8.0&verbose=true";
+        //        }
+        //        else
+        //        {
+        //            requestUri = $"/luis/v2.0/apps/{id}?subscription-key={subscriptionKey}&q={question}&contextId={contextId}";
+        //        }
+        //        Debug.WriteLine(requestUri);
+        //        HttpResponseMessage response = await client.GetAsync(requestUri);
 
-                return JsonConvert.DeserializeObject<LUISResponse>(await response.Content.ReadAsStringAsync());
-            }
-        }
+        //        return JsonConvert.DeserializeObject<LUISResponse>(await response.Content.ReadAsStringAsync());
+        //    }
+        //}
     }
 }
