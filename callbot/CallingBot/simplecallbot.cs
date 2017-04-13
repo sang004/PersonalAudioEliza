@@ -9,11 +9,13 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using NAudio.Wave;
+
+
 
 using System.Configuration;
 
 using SSS = System.Speech.Synthesis;
-using NAudio.Wave;
 using System.IO;
 
 namespace callbot
@@ -100,14 +102,34 @@ namespace callbot
                     logger.WriteToText("USER: ", res);
                     Debug.WriteLine($"Response ----- {res}");
 
-                    //use rs object to fetch appropriate url for audio based on each result given
-                    audioArr.Add( rsapi.Call("mp3test").Result);
-                    
+                    // if LUIS does not return a topic but a sentence with question mark, use text to speech
+                    bool isEcho = res.Contains("?");
+                    if (isEcho) {
+                        SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
+                        // Configure the audio output. 
+                        MemoryStream ms = new MemoryStream();
+
+                        string tempPath = Path.GetTempPath();
+                        synth.SetOutputToWaveStream(ms);
+                        synth.Speak(res);
+                        audioArr.Add($"{tempPath}Rate.mp3");
+                        
+                    }
+                    else
+                    {
+                        //use rs object to fetch appropriate url for audio based on each result given
+                        audioArr.Add(rsapi.Call(res).Result);
+                    }
+                                        
                 }
+                // if there is only 1 file, no point creating an object to combine the audio files, just use RS link
+
                 audioMan am = new audioMan(audioArr);
                 actionList.Add(PlayAudioFile(am.azureUrl));
+           
 
-                //actionList.Add(GetPromptForText(response));
+                //actionList.Add(GetPromptForText(res, -1));
+
                 actionList.Add(GetRecordForText(string.Empty,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 response.Clear();
