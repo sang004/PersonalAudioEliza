@@ -39,7 +39,7 @@ namespace callbot
             
             //for mp3
             ConcatenateAudio_mp3(audioPaths, output);
-
+            
             azureFunc(output);
             
         }
@@ -152,16 +152,22 @@ namespace callbot
             
             //get temp directory path  
             string tempPath = Path.GetTempPath();
-            int idx = 0;
+            string realPath = "";
+
             foreach (string file in inputFiles)
             {
-                string realPath = $"{tempPath}temp.mp3";
-                
-                using (var client = new WebClient())
+                if (file.Contains("http"))
                 {
-                    client.DownloadFile(file, realPath);
+                    realPath = $"{tempPath}temp.mp3";
+                    using (var client = new WebClient())
+                    {
+                        client.DownloadFile(file, realPath);
+                    }
                 }
-
+                else {
+                    realPath = file;
+                }
+                
 
                 Mp3FileReader reader = new Mp3FileReader(realPath);
                 if ((output.Position == 0) && (reader.Id3v2Tag != null))

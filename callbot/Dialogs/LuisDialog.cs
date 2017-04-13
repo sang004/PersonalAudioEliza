@@ -63,14 +63,14 @@ namespace callbot.Dialogs
                         //entities.Add(new EntityRecommendation(type: nameof(RentForm.PickLocation)) { Entity = entity.Entity });
                         EntityRecommendation sick;
                         if (result.TryFindEntity("MedicDescription", out sick)) {
-                            await context.PostAsync(@"hum");
+                            await context.PostAsync(@"mp3test");
                         }
 
                         break;
                     case "BodyPart":
                         EntityRecommendation bleed;
                         if (result.TryFindEntity("BodyPart", out bleed)) {
-                            await context.PostAsync(@"feelsick");
+                            await context.PostAsync(@"mp3test");
                         }
 
                         break;
@@ -78,7 +78,7 @@ namespace callbot.Dialogs
                     // so if it cannot identify any useful entity type, use entity word itself to rephrase into a question.
                     case "Noun":
                         string word = entity.Entity;
-                        await context.PostAsync(@"What is {word}");
+                        await context.PostAsync($"What is {word}?");
 
                         break;
 
@@ -86,7 +86,7 @@ namespace callbot.Dialogs
                         break;
                 }
             }
-            await context.PostAsync(@"feelsick");
+            await context.PostAsync(@"What is word?");
 
 
 
