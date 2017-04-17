@@ -1,5 +1,9 @@
 # bot
 
+Relational diagram for classes :  https://github.com/sang004/bot/blob/master/Class_Diagram.svg
+
+Detailed setup guide: https://itsamiraclemycodeworks.wordpress.com/2017/01/31/first-blog-post/
+
 Requirements:
 -Windows 8 and above
 -Visual Studio 2015 and above
