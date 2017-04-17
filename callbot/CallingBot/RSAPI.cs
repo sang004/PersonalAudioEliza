@@ -121,7 +121,6 @@ namespace callbot
         /// <returns>The server path to the folder that contains the resource file</returns>
         public async Task<string> GetResourceFolder(string resourceId, string extension)
         {
-            string folerPath = "Empty";
             string modFullPath = "";
             string fullPath = await CallAPI("get_resource_path", parameter.GetResourcePath(resourceId, extension));
             if (!string.IsNullOrEmpty(fullPath))
@@ -162,10 +161,10 @@ namespace callbot
             }
         }
 
-        public async Task<String> searchFile(string searchInput)
+        public async Task<String> searchFile(string searchInput, string resTypes)
         {
             // use do_search api call to search using string and return json
-            string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput));
+            string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput, resTypes));
             if (!string.IsNullOrEmpty(jsonResponse))
             {
                 Debug.WriteLine(jsonResponse);
@@ -184,7 +183,7 @@ namespace callbot
             int eleIdx = 0;
 
             //fetch audio files based on keywords
-            string jsonResponse = await searchFile(keyword);
+            string jsonResponse = await searchFile(keyword, "4");
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
             if (mode == "demo")
@@ -298,15 +297,15 @@ namespace callbot
             parameters = "";
         }
 
-        public string DoSearch( string searchStr ) {
-            string resTypes = "";
-            string orderby = "";
+
+        public string DoSearch( string searchStr, string resTypes ) {
+            string orderby = "title";
             string archive = "0";
             string fetchrows = "";
             string sort = "desc";
 
-            parameters = String.Format("param1={0}",
-                         searchStr);
+            parameters = String.Format("param1={0}&param2={1}&param3={2}",
+                         searchStr, resTypes, orderby);
 
             return parameters;
         }
@@ -316,9 +315,7 @@ namespace callbot
             string getFilePath = "false";  // to get url"true";
             string size = "";
             string generate = "";
-            string page = "";
-            string watermarked = "";
-            string alternative = "";
+
             parameters = String.Format("param1={0}&param2={1}&param3={2}&param4={3}&param5={4}",
                          resourceId, getFilePath, size, generate, extension);
             return parameters;

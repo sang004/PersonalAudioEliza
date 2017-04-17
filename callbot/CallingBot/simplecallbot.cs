@@ -10,7 +10,11 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.Configuration;
+
 using SSS = System.Speech.Synthesis;
+using NAudio.Wave;
+using System.IO;
 
 namespace callbot
 {
@@ -26,7 +30,6 @@ namespace callbot
         bool sttFailed = false;
         static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
 
-
         public simplecallbot(ICallingBotService callingBotService)
         {
 
@@ -34,6 +37,7 @@ namespace callbot
                 throw new ArgumentNullException(nameof(callingBotService));
 
             this.CallingBotService = callingBotService;
+            
 
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
@@ -47,19 +51,19 @@ namespace callbot
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Hi hi!")
+                    GetRecordForText("Hi hi!", 0)
                 };
 
             return Task.FromResult(true);
         }
 
-        private ActionBase GetRecordForText(string promptText)
+        private ActionBase GetRecordForText(string promptText, int mode)
         {
             PlayPrompt prompt;
             if (string.IsNullOrEmpty(promptText))
                 prompt = null;
             else
-                prompt = GetPromptForText(promptText);
+                prompt = GetPromptForText(promptText, mode);
             //prompt = PlayAudioFile(promptText);
             var id = Guid.NewGuid().ToString();
 
@@ -76,32 +80,35 @@ namespace callbot
             };
         }
 
-        private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
+        private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
+            string user = ConfigurationManager.AppSettings["RSId"];
+            string private_key = ConfigurationManager.AppSettings["RSPassword"];
+            RSAPI rsapi = new RSAPI(user, private_key);
+
+            List<string> audioArr = new List<string>();
+
             // get response from LUIS in text form
             if (response.Count > 0)
             {
                 silenceTimes = 0;
                 var actionList = new List<ActionBase>();
+
+                // there might be multiple replies from LUIS
                 foreach (var res in response)
                 {
                     logger.WriteToText("USER: ", res);
-
                     Debug.WriteLine($"Response ----- {res}");
 
-                    // start playback of response
-                    ///TEST
-                    string user = "user";
-                    string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
-
-                    RSAPI test2 = new RSAPI(user, private_key);
-                    string replyAudioPath = test2.Call(res).Result;
-                    actionList.Add(PlayAudioFile(replyAudioPath));
-
+                    //use rs object to fetch appropriate url for audio based on each result given
+                    audioArr.Add( rsapi.Call(res).Result);
+                    
                 }
+                audioMan am = new audioMan(audioArr);
+                actionList.Add(PlayAudioFile(am.azureUrl));
 
                 //actionList.Add(GetPromptForText(response));
-                actionList.Add(GetRecordForText(string.Empty));
+                actionList.Add(GetRecordForText(string.Empty,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 response.Clear();
             }
@@ -111,7 +118,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?")
+                        GetRecordForText("I didn't catch that, would you kindly repeat?",-1)
                     };
                     sttFailed = false;
                     silenceTimes = 0;
@@ -120,7 +127,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Something went wrong. Call again later."),
+                        GetPromptForText("Something went wrong. Call again later.",-1),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -143,31 +150,45 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-                //TEST AUDIO input
-                ///Retrieve random audio
-                string user = "user";
-                string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
 
-                RSAPI test2 = new RSAPI(user, private_key);
-                string replyAudioPath = test2.Call("sample").Result;
+#if DEBUG
+                //TEST AUDIO START
+                ///Retrieve random audio            
+                string user = ConfigurationManager.AppSettings["RSId"];
+                string private_key = ConfigurationManager.AppSettings["RSPassword"];
 
+                //RSAPI test2 = new RSAPI(user, private_key);
+                //string replyAudioPath = test2.Call("sample").Result;
+
+
+                string replyAudioPath = "http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/1/1/9_82633649062982a/119_9940cf736bc80f7.wav";
+                
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
 
-                //byte[] bytes = System.IO.File.ReadAllBytes("C:\\Users\\user\\Downloads\\BOT\\morning.wav");
                 System.IO.Stream streams = new System.IO.MemoryStream(bytes);
+                var record = streams;
 
-                var record = streams;//await recordOutcomeEvent.RecordedContent;//streams;//
+                //TEST AUDIO END
+
+#else
+                var record = await recordOutcomeEvent.RecordedContent;
+#endif
+
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
-
+                
                 //AskLUIS test = new AskLUIS();
                 //String response = test.questionLUIS(activity.Text);
                 recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     GetSilencePrompt()
                 };
+
+            } else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated") {
+                //So if the caller hangs up, initiate hangout on bot
+                new Hangup() { OperationId = Guid.NewGuid().ToString() };
 
             }
             else
@@ -176,7 +197,7 @@ namespace callbot
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Bye bye!"),
+                        GetPromptForText("Bye bye!",0),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -187,7 +208,7 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?")
+                        GetRecordForText("I didn't catch that, would you kindly repeat?",1)
                     };
                 }
             }
@@ -202,22 +223,106 @@ namespace callbot
             return Task.FromResult(true);
         }
 
+        //public static void ConcatenateAudio(IEnumerable<string> sourceFiles)
+        //{
+        //    byte[] buffer = new byte[1024];
+        //    WaveFileWriter waveFileWriter = null;
+
+        //    //get temp directory path  
+        //    string tempPath = Path.GetTempPath();
+        //    string output = $"{tempPath}b.wav";
+
+        //    try
+        //    {
+        //        foreach (string sourceFile in sourceFiles)
+        //        {
+        //            string realPath = $"{tempPath}a.wav";
+        //            using (var client = new WebClient())
+        //            {
+        //                client.DownloadFile(sourceFile, realPath);
+        //            }
+
+        //            using (WaveFileReader reader = new WaveFileReader(realPath))
+        //            {
+        //                if (waveFileWriter == null)
+        //                {
+        //                    // first time in create new Writer
+        //                    waveFileWriter = new WaveFileWriter(output, reader.WaveFormat);
+        //                }
+        //                else
+        //                {
+        //                    if (!reader.WaveFormat.Equals(waveFileWriter.WaveFormat))
+        //                    {
+        //                        throw new InvalidOperationException("Can't concatenate WAV Files that don't share the same format");
+        //                    }
+        //                }
+
+        //                int read;
+        //                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
+        //                {
+        //                    waveFileWriter.Write(buffer, 0, read);
+        //                }
+        //            }
+        //            //remove file from temp storage after use
+        //            File.Delete(realPath);
+
+        //        }
+        //    }
+        //    catch {
+        //        Console.WriteLine("ERROR LOH");
+
+        //    }
+        //    finally
+        //    {
+        //        if (waveFileWriter != null)
+        //        {
+        //            waveFileWriter.Dispose();
+        //        }
+        //    }
+        //    Console.WriteLine("done");
+        //    audioMan am = new audioMan(output); 
+        //}
+
         // TEST playback
         private static PlayPrompt PlayAudioFile(string audioPath)
         {
+
             //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
             System.Uri uri = new System.Uri(audioPath);
-
+            
             var prompt = new Prompt { FileUri = uri };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
 
-        private static PlayPrompt GetPromptForText(string text)
+        private static PlayPrompt GetPromptForText(string text, int mode)
         {
-            logger.WriteToText("BOT: ", text);
 
-            var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+            System.Uri uri;
+            logger.WriteToText("BOT: ", text);
+            if (mode == 1)
+            {
+                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
+
+                var prompt = new Prompt { FileUri = uri };
+                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+
+
+            }
+            else if (mode == 0)
+            {
+                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/5_1b312f7bcb5fbc6/85_0edca2f3cccad42.wav");
+
+                var prompt = new Prompt { FileUri = uri };
+                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+
+
+            }
+            else {
+                var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
+                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+
+            }
+
         }
 
         private static PlayPrompt GetPromptForText(List<string> text)
