@@ -1,5 +1,7 @@
 # bot
 
+Relational diagram for classes :  bot/Class_Diagram.svg 
+
 Requirements:
 -Windows 8 and above
 -Visual Studio 2015 and above
