@@ -11,6 +11,11 @@ using System.Linq;
 using System.Net;
 using System.Web;
 
+using System.Speech.AudioFormat;
+using NAudio.Lame;
+using NAudio.Wave;
+using System.Diagnostics;
+
 namespace callbot
 { 
     public class audioMan
@@ -22,8 +27,13 @@ namespace callbot
 
         private string output { get; set; }
 
-        public audioMan(List<string> audioPaths) {
+        public audioMan() {
 
+            
+            
+        }
+
+        public void callCombine(List<string> audioPaths) {
             string tempPath = Path.GetTempPath();
 
             output = $"{tempPath}output.mp3";
@@ -36,12 +46,49 @@ namespace callbot
 
             // for wav
             //ConcatenateAudio(audioPaths, output);
-            
+
             //for mp3
             ConcatenateAudio_mp3(audioPaths, output);
-            
+
             azureFunc(output);
-            
+
+        }
+
+        public static void CheckAddBinPath()
+        {
+            // find path to 'bin' folder
+            var binPath = Path.Combine(new string[] { AppDomain.CurrentDomain.BaseDirectory, "bin" });
+            // get current search path from environment
+            var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+
+            // add 'bin' folder to search path if not already present
+            if (!path.Split(Path.PathSeparator).Contains(binPath, StringComparer.CurrentCultureIgnoreCase))
+            {
+                path = string.Join(Path.PathSeparator.ToString(), new string[] { path, binPath });
+                Environment.SetEnvironmentVariable("PATH", path);
+            }
+        }
+
+        public void ConvertWavStreamToMp3File( ref MemoryStream ms, string savetofilename)
+        {
+            try
+            {
+                CheckAddBinPath();
+                //rewind to beginning of stream
+                ms.Seek(0, SeekOrigin.Begin);
+
+                using (var retMs = new MemoryStream())
+                using (var rdr = new WaveFileReader(ms))
+                using (var wtr = new LameMP3FileWriter(savetofilename, rdr.WaveFormat, LAMEPreset.VBR_90))
+                {
+                    rdr.CopyTo(wtr);
+                }
+            }
+            catch
+            {
+                Debug.WriteLine("GG");
+
+            }
         }
 
         private void azureFunc(string localPath)

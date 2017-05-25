@@ -15,6 +15,8 @@ namespace callbot.Dialogs
 {
     [Serializable]
     [LuisModel("9f9431ae-4a39-4ac2-861a-b5ee265f5424", "3368b24c1b4b488d8ee845e7f47a53cd")]
+    //[LuisModel("3091b2f3-d34b-4b8b-8a1e-96de8ab7baac", "b068f279cb5f4881a1a37bc1a13be595")]
+
     public class LuisDialog: LuisDialog<object>
     {
         

@@ -9,10 +9,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using NAudio.Wave;
-
-
-
 using System.Configuration;
 
 using SSS = System.Speech.Synthesis;
@@ -89,6 +85,7 @@ namespace callbot
             RSAPI rsapi = new RSAPI(user, private_key);
 
             List<string> audioArr = new List<string>();
+            audioMan am = new audioMan();
 
             // get response from LUIS in text form
             if (response.Count > 0)
@@ -112,6 +109,9 @@ namespace callbot
                         string tempPath = Path.GetTempPath();
                         synth.SetOutputToWaveStream(ms);
                         synth.Speak(res);
+                        //now convert to mp3 using LameEncoder or shell out to audiograbber
+                        am.ConvertWavStreamToMp3File(ref ms, $"{tempPath}Rate.mp3");
+
                         audioArr.Add($"{tempPath}Rate.mp3");
                         
                     }
@@ -124,7 +124,8 @@ namespace callbot
                 }
                 // if there is only 1 file, no point creating an object to combine the audio files, just use RS link
 
-                audioMan am = new audioMan(audioArr);
+                
+                am.callCombine(audioArr);
                 actionList.Add(PlayAudioFile(am.azureUrl));
            
 
@@ -166,6 +167,8 @@ namespace callbot
             }
             return Task.CompletedTask;
         }
+
+
 
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {

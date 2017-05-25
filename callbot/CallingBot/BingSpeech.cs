@@ -113,7 +113,9 @@ namespace callbot
             {
                 From = new ChannelAccount { Id = conversationResult.Id },
                 Conversation = new ConversationAccount { Id = conversationResult.Id },
-                Recipient = new ChannelAccount { Id = "callbot_dev" },
+                //Recipient = new ChannelAccount { Id = "callbot_dev" },
+                Recipient = new ChannelAccount { Id = "dev_callbot" },
+
                 ServiceUrl = "https://skype.botframework.com",
                 ChannelId = "skype",
             };
