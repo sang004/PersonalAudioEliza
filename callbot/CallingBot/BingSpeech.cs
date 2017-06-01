@@ -22,16 +22,18 @@ namespace callbot
         private Action<string> _callback;
         private ConversationResult conversationResult;
         private Action<bool> _failedCallback;
+        private Action<string> _bingresponse;
 
         public String responseJson;
 
-        public BingSpeech(ConversationResult conversationResult, Action<string> callback, Action<bool> failedCallback)
+        public BingSpeech(ConversationResult conversationResult, Action<string> callback, Action<bool> failedCallback, Action<string> bingresponse)
         {
             responseJson = "";
 
             this.conversationResult = conversationResult;
             _callback = callback;
             _failedCallback = failedCallback;
+            _bingresponse = bingresponse;
 
         }
 
@@ -94,7 +96,9 @@ namespace callbot
             // Send to bot
             if (e.PhraseResponse.RecognitionStatus == RecognitionStatus.RecognitionSuccess)
             {
-                await SendToBot(e.PhraseResponse.Results[0]);
+                //await SendToBot(e.PhraseResponse.Results[0]);
+                _failedCallback(false);
+
 
                 //await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).Last());
                 //responseJson = e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault().DisplayText;
@@ -113,13 +117,13 @@ namespace callbot
             {
                 From = new ChannelAccount { Id = conversationResult.Id },
                 Conversation = new ConversationAccount { Id = conversationResult.Id },
-                //Recipient = new ChannelAccount { Id = "callbot_dev" },
                 Recipient = new ChannelAccount { Id = "dev_callbot" },
 
                 ServiceUrl = "https://skype.botframework.com",
                 ChannelId = "skype",
             };
             activity.Text = recognizedPhrase.DisplayText;
+            _bingresponse(activity.Text);
             ////TEST START
 
             //LUISResponse luisResponse = new LUISResponse();
@@ -149,19 +153,18 @@ namespace callbot
             //Debug.WriteLine(JsonConvert.SerializeObject(luisResponse));
 
             ////TEST END
-                    
-            ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-            await connector.Conversations.SendToConversationAsync(activity);
 
-            using (var scope = Microsoft.Bot.Builder.Dialogs.Conversation
-                .Container.BeginLifetimeScope(DialogModule.LifetimeScopeTag, Configure))
-            {
-                scope.Resolve<IMessageActivity>(TypedParameter.From((IMessageActivity)activity));
-                DialogModule_MakeRoot.Register(scope, () => new Dialogs.LuisDialog());
-                var postToBot = scope.Resolve<IPostToBot>();
-                await postToBot.PostAsync(activity, CancellationToken.None);   
-            }
+            //ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+            //await connector.Conversations.SendToConversationAsync(activity);
 
+            //using (var scope = Microsoft.Bot.Builder.Dialogs.Conversation
+            //    .Container.BeginLifetimeScope(DialogModule.LifetimeScopeTag, Configure))
+            //{
+            //    scope.Resolve<IMessageActivity>(TypedParameter.From((IMessageActivity)activity));
+            //    DialogModule_MakeRoot.Register(scope, () => new Dialogs.ElizaDialog());
+            //    var postToBot = scope.Resolve<IPostToBot>();
+            //    await postToBot.PostAsync(activity, CancellationToken.None);   
+            //}
         }
 
         private void Configure(ContainerBuilder builder)
@@ -191,6 +194,7 @@ namespace callbot
 
                 this.WriteLine(string.Empty);
             }
+            _bingresponse(e.PhraseResponse.Results[0].DisplayText);
         }
 
         private void WriteLine(string format, params object[] args)

@@ -26,6 +26,7 @@ namespace callbot
         private List<string> response = new List<string>();
         int silenceTimes = 0;
         bool sttFailed = false;
+        string bingresponse = "";
         static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
 
         public simplecallbot(ICallingBotService callingBotService)
@@ -49,7 +50,7 @@ namespace callbot
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Hi hi!", 0)
+                    GetRecordForText("Hi hi!", -1)
                 };
 
             return Task.FromResult(true);
@@ -80,58 +81,60 @@ namespace callbot
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
-            string user = ConfigurationManager.AppSettings["RSId"];
-            string private_key = ConfigurationManager.AppSettings["RSPassword"];
-            RSAPI rsapi = new RSAPI(user, private_key);
+            //string user = ConfigurationManager.AppSettings["RSId"];
+            //string private_key = ConfigurationManager.AppSettings["RSPassword"];
+            //RSAPI rsapi = new RSAPI(user, private_key);
 
-            List<string> audioArr = new List<string>();
-            audioMan am = new audioMan();
+            //List<string> audioArr = new List<string>();
+            //audioMan am = new audioMan();
 
             // get response from LUIS in text form
-            if (response.Count > 0)
-            {
-                silenceTimes = 0;
-                var actionList = new List<ActionBase>();
+            //if (response.Count > 0)
+            //{
+            //    silenceTimes = 0;
+            //    var actionList = new List<ActionBase>();
 
-                // there might be multiple replies from LUIS
-                foreach (var res in response)
-                {
-                    logger.WriteToText("USER: ", res);
-                    Debug.WriteLine($"Response ----- {res}");
+            //    // there might be multiple replies from LUIS
+            //    foreach (var res in response)
+            //    {
+            //        logger.WriteToText("USER: ", res);
+            //        Debug.WriteLine($"Response ----- {res}");
 
-                    // if LUIS does not return a topic but a sentence with question mark, use text to speech
-                    bool isEcho = res.Contains("?");
-                    if (isEcho) {
-                        SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
-                        // Configure the audio output. 
-                        MemoryStream ms = new MemoryStream();
+            //        // if LUIS does not return a topic but a sentence with question mark, use text to speech
+            //        //bool isEcho = res.Contains("?");
+            //        //if (isEcho) {
+            //        //SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
+            //        //// Configure the audio output. 
+            //        //MemoryStream ms = new MemoryStream();
 
-                        string tempPath = Path.GetTempPath();
-                        synth.SetOutputToWaveStream(ms);
-                        synth.Speak(res);
-                        //now convert to mp3 using LameEncoder or shell out to audiograbber
-                        am.ConvertWavStreamToMp3File(ref ms, $"{tempPath}Rate.mp3");
+            //        //string tempPath = Path.GetTempPath();
+            //        //synth.SetOutputToWaveStream(ms);
+            //        //synth.Speak(res);
+            //        ////now convert to mp3 using LameEncoder or shell out to audiograbber
+            //        //am.ConvertWavStreamToMp3File(ref ms, $"{tempPath}Rate.mp3");
 
-                        audioArr.Add($"{tempPath}Rate.mp3");
-                        
-                    }
-                    else
-                    {
-                        //use rs object to fetch appropriate url for audio based on each result given
-                        audioArr.Add(rsapi.Call(res).Result);
-                    }
-                                        
-                }
-                // if there is only 1 file, no point creating an object to combine the audio files, just use RS link
+            //        //audioArr.Add($"{tempPath}Rate.mp3");
 
-                
-                am.callCombine(audioArr);
-                actionList.Add(PlayAudioFile(am.azureUrl));
-           
+            //        //}
+            //        //else
+            //        //{
+            //        //use rs object to fetch appropriate url for audio based on each result given
+            //        //    audioArr.Add(rsapi.Call(res).Result);
+            //        //}
+            //    }
+            // if there is only 1 file, no point creating an object to combine the audio files, just use RS link
 
-                //actionList.Add(GetPromptForText(res, -1));
 
-                actionList.Add(GetRecordForText(string.Empty,-1));
+            //am.callCombine(audioArr);
+            //actionList.Add(PlayAudioFile(am.azureUrl));
+
+
+            //actionList.Add(GetPromptForText(res, -1));
+            var actionList = new List<ActionBase>();
+            if(bingresponse != "") { 
+                Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
+                string output = ED.Reply(bingresponse);
+                actionList.Add(GetRecordForText(output,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 response.Clear();
             }
@@ -176,7 +179,7 @@ namespace callbot
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
 
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
@@ -186,7 +189,7 @@ namespace callbot
                 //string replyAudioPath = test2.Call("sample").Result;
 
 
-                string replyAudioPath = "http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/1/1/9_82633649062982a/119_9940cf736bc80f7.wav";
+                string replyAudioPath = "http://ec2-52-221-215-199.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
                 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -200,7 +203,7 @@ namespace callbot
                 var record = await recordOutcomeEvent.RecordedContent;
 #endif
 
-                BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s);
+                BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse=b);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
                 
@@ -222,7 +225,7 @@ namespace callbot
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Bye bye!",0),
+                        GetPromptForText("Bye bye!",-1),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -233,7 +236,7 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",1)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?",-1)
                     };
                 }
             }
