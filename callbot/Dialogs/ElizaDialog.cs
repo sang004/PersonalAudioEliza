@@ -21,6 +21,13 @@ namespace callbot.Dialogs
             @"Can you (.*)", @"Can I (.*)", @"You are (.*)", @"I don'?t (.*)", @"I feel (.*)", @"I have (.*)", @"I would (.*)", @"Is there (.*)",
             @"My (.*)", @"You (.*)", @"Why (.*)", @"I want (.*)", @"(.*) mother (.*)", @"(.*) father (.*)", @"(.*) child (.*)", @"bye", @"(.*)"});
 
+        public ElizaDialog()
+        {
+            BuildPsychobabble();
+            BuildReflection();
+
+        }
+
         public void BuildReflection()
         {
             reflection.Add("am", "are");
@@ -259,7 +266,6 @@ namespace callbot.Dialogs
 
         public string Reply(string text)
         {
-            BuildPsychobabble();
             string response = "";
             List<string> result = new List<string>();
 
