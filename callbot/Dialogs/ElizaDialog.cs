@@ -5,27 +5,34 @@ using Microsoft.Bot.Builder.Dialogs;
 using System.Threading.Tasks;
 using Microsoft.Bot.Connector;
 using System.Diagnostics;
-
+using System.Linq;
+using System.Threading;
 
 namespace callbot.Dialogs
 {
     [Serializable]
     public class ElizaDialog //: IDialog<Object>
     {
-
         public Dictionary<string, string> reflection = new Dictionary<string, string>();
         public Dictionary<string, List<string>> psychobabble = new Dictionary<string, List<string>>();
+        //public List<string> target = new List<string>(new string[34] {
+        //    @"I need (.*)", @"Why don'?t you (.*)", @"Why can'?t I (.*)", @"I can'?t (.*)", @"I am (.*)", @"Are you (.*)", @"What (.*)", @"How (.*)",
+        //    @"Because (.*)", @"(.*) sorry (.*)", @"Hello (.*)", @"I think (.*)", @"(.*) friend (.*)", @"Yes", @"(.*) computer (.*)", @"Is it (.*)", @"It is (.*)",
+        //    @"Can you (.*)", @"Can I (.*)", @"You are (.*)", @"I don'?t (.*)", @"I feel (.*)", @"I have (.*)", @"I would (.*)", @"Is there (.*)",
+        //    @"My (.*)", @"You (.*)", @"Why (.*)", @"I want (.*)", @"(.*) mother (.*)", @"(.*) father (.*)", @"(.*) child (.*)", @"bye", @"(.*)"});
+
         public List<string> target = new List<string>(new string[34] {
-            @"I need (.*)", @"Why don'?t you (.*)", @"Why can'?t I (.*)", @"I can'?t (.*)", @"I am (.*)", @"Are you (.*)", @"What (.*)", @"How (.*)",
-            @"Because (.*)", @"(.*) sorry (.*)", @"Hello (.*)", @"I think (.*)", @"(.*) friend (.*)", @"Yes", @"(.*) computer (.*)", @"Is it (.*)", @"It is (.*)",
-            @"Can you (.*)", @"Can I (.*)", @"You are (.*)", @"I don'?t (.*)", @"I feel (.*)", @"I have (.*)", @"I would (.*)", @"Is there (.*)",
-            @"My (.*)", @"You (.*)", @"Why (.*)", @"I want (.*)", @"(.*) mother (.*)", @"(.*) father (.*)", @"(.*) child (.*)", @"bye", @"(.*)"});
+            @"I need", @"Why don't you", @"Why can't I", @"I can't", @"I am", @"Are you", @"What", @"How",
+            @"Because", @" sorry", @"Hello", @"I think", @" friend", @"Yes", @" computer", @"Is it", @"It is",
+            @"Can you", @"Can I", @"You are", @"I don't", @"I feel", @"I have", @"I would", @"Is there",
+            @"My", @"You", @"Why", @"I want", @" mother", @" father", @" child", @"bye", @""});
 
         public ElizaDialog()
         {
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+
             BuildPsychobabble();
             BuildReflection();
-
         }
 
         public void BuildReflection()
@@ -268,6 +275,9 @@ namespace callbot.Dialogs
         {
             string response = "";
             List<string> result = new List<string>();
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+
+            var matches = target.AsParallel().Where(s=>text.Contains(s)).WithCancellation(tokenSource.Token).Select(s=>text.Contains(s)).ToList();
 
             foreach (string pattern in target)
             {
