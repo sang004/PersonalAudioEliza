@@ -179,7 +179,7 @@ namespace callbot
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
 
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
