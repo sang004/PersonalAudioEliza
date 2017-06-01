@@ -70,7 +70,7 @@ namespace callbot
             {
                 OperationId = id,
                 PlayPrompt = prompt,
-                MaxDurationInSeconds = 5,
+                MaxDurationInSeconds = 10,
                 InitialSilenceTimeoutInSeconds = 5,
                 MaxSilenceTimeoutInSeconds = 2,
                 PlayBeep = false,
