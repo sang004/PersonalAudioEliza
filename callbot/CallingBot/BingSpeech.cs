@@ -123,7 +123,7 @@ namespace callbot
                 ChannelId = "skype",
             };
             activity.Text = recognizedPhrase.DisplayText;
-            _bingresponse(activity.Text);
+            //_bingresponse(activity.Text);
             ////TEST START
 
             //LUISResponse luisResponse = new LUISResponse();

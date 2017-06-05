@@ -28,7 +28,7 @@ namespace callbot
         bool sttFailed = false;
         string bingresponse = "";
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
-        static Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
+        private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -64,16 +64,15 @@ namespace callbot
                 prompt = null;
             else
                 prompt = GetPromptForText(promptText, mode);
-            //prompt = PlayAudioFile(promptText);
             var id = Guid.NewGuid().ToString();
 
             return new Record()
             {
                 OperationId = id,
                 PlayPrompt = prompt,
-                MaxDurationInSeconds = 5,
-                InitialSilenceTimeoutInSeconds = 2,
-                MaxSilenceTimeoutInSeconds = 2,
+                MaxDurationInSeconds = 10,
+                InitialSilenceTimeoutInSeconds = 5,
+                MaxSilenceTimeoutInSeconds = 5,
                 PlayBeep = false,
                 RecordingFormat = RecordingFormat.Wav,
                 StopTones = new List<char> { '#' }
@@ -132,12 +131,33 @@ namespace callbot
 
             //actionList.Add(GetPromptForText(res, -1));
             var actionList = new List<ActionBase>();
-            if(bingresponse != "") { 
-                string output = ED.Reply(bingresponse);
-                actionList.Add(GetRecordForText(output,-1));
-                playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
-                response.Clear();
+            if (bingresponse != "")
+            {
+
+                // if its bye
+                if (bingresponse.ToLower().Contains("bye"))
+                {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    {
+                        GetPromptForText("Anybody there? Bye.",-1),
+                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                    };
+                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                    silenceTimes = 0;
+
+                }
+                else
+                {
+
+                    //else identify words
+                    string output = await ED.Reply(bingresponse);
+                    Debug.WriteLine($"Bing response: {output}");
+
+                    actionList.Add(GetRecordForText(output, -1));
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
+                }
             }
+             
             else
             {
                 if (sttFailed)
@@ -161,10 +181,11 @@ namespace callbot
                 }
                 else
                 {
+                    //last resort, listen longer
                     silenceTimes++;
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetSilencePrompt()
+                        GetSilencePrompt(500)
                     };
                 }
             }
@@ -203,7 +224,7 @@ namespace callbot
                 var record = await recordOutcomeEvent.RecordedContent;
 #endif
 
-                BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse=b);
+                BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse = b);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
                 
@@ -308,7 +329,7 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 5)
+        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 10)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
