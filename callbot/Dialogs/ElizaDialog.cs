@@ -494,7 +494,7 @@ namespace callbot.Dialogs
 
             //});
 
-            Parallel.ForEach(targetori, (pattern, state) =>
+            foreach(string pattern in targetori)
             {
                 if (Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase))
                 {
@@ -504,11 +504,11 @@ namespace callbot.Dialogs
                     {
                         result_ori.Add(Reflect(match.Groups[1].Value));
                     }
-                    state.Break();
+                    break;
 
                    
                 }
-            });
+            }
 
             string retVal_ori = string.Format(result_ori[0], result_ori[1]);
             //string retVal = string.Format(result[0], result[1]);
