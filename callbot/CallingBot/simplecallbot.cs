@@ -27,7 +27,8 @@ namespace callbot
         int silenceTimes = 0;
         bool sttFailed = false;
         string bingresponse = "";
-        static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+        //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+        static Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -70,8 +71,8 @@ namespace callbot
             {
                 OperationId = id,
                 PlayPrompt = prompt,
-                MaxDurationInSeconds = 10,
-                InitialSilenceTimeoutInSeconds = 5,
+                MaxDurationInSeconds = 5,
+                InitialSilenceTimeoutInSeconds = 2,
                 MaxSilenceTimeoutInSeconds = 2,
                 PlayBeep = false,
                 RecordingFormat = RecordingFormat.Wav,
@@ -132,7 +133,6 @@ namespace callbot
             //actionList.Add(GetPromptForText(res, -1));
             var actionList = new List<ActionBase>();
             if(bingresponse != "") { 
-                Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
                 string output = ED.Reply(bingresponse);
                 actionList.Add(GetRecordForText(output,-1));
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
@@ -164,7 +164,7 @@ namespace callbot
                     silenceTimes++;
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetSilencePrompt(2000)
+                        GetSilencePrompt()
                     };
                 }
             }
@@ -179,7 +179,7 @@ namespace callbot
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
 
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
@@ -189,7 +189,7 @@ namespace callbot
                 //string replyAudioPath = test2.Call("sample").Result;
 
 
-                string replyAudioPath = "http://ec2-52-221-215-199.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-255-175-193.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
                 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -246,7 +246,7 @@ namespace callbot
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
-            logger.uploadToRS();
+            //logger.uploadToRS();
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
@@ -266,7 +266,7 @@ namespace callbot
         {
 
             System.Uri uri;
-            logger.WriteToText("BOT: ", text);
+            //logger.WriteToText("BOT: ", text);
             if (mode == 1)
             {
                 uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
@@ -298,17 +298,17 @@ namespace callbot
             var prompts = new List<Prompt>();
             foreach (var txt in text)
             {
-                logger.WriteToText("BOT: ", txt);
+                //logger.WriteToText("BOT: ", txt);
 
                 if (!string.IsNullOrEmpty(txt))
                     prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
             }
             if (prompts.Count == 0)
-                return GetSilencePrompt(1000);
+                return GetSilencePrompt();
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 3000)
+        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 5)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };

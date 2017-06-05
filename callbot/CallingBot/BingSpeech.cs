@@ -194,7 +194,15 @@ namespace callbot
 
                 this.WriteLine(string.Empty);
             }
-            _bingresponse(e.PhraseResponse.Results[0].DisplayText);
+
+            // if bing does not return anything
+            if (e.PhraseResponse.Results.Length > 0)
+            {
+                _bingresponse(e.PhraseResponse.Results[0].DisplayText);
+            }
+            else {
+                _bingresponse("");
+            }
         }
 
         private void WriteLine(string format, params object[] args)
