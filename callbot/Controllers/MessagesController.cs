@@ -9,6 +9,7 @@ using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
 using Microsoft.Bot.Builder.Dialogs;
 using callbot.Dialogs;
+using System.Configuration;
 
 namespace callbot
 {
@@ -19,13 +20,32 @@ namespace callbot
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
+        /// 
+        private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
+        private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
+
+
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
             
             
             if (activity.Type == ActivityTypes.Message)
             {
-                await Conversation.SendAsync(activity, () => new LuisDialog());
+
+                StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+                BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
+
+                //store data
+                if (activity.Text.ToLower().Contains("call"))
+                {
+                    userData.SetProperty<string>("Call", activity.Text);
+                    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
+                }
+                else if (activity.Text.ToLower().Contains("who")) {
+                    var sentGreeting = userData.GetProperty<string>("Call");
+                    Console.WriteLine(sentGreeting);
+                }
+                //await Conversation.SendAsync(activity, () => new LuisDialog());
             }
             else
             {
