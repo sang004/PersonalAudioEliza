@@ -4,15 +4,13 @@ using Microsoft.Bot.Builder.Calling.ObjectModel.Contracts;
 using Microsoft.Bot.Builder.Calling.ObjectModel.Misc;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
 
 using SSS = System.Speech.Synthesis;
 using System.IO;
+using System.Diagnostics;
 
 namespace callbot
 {
@@ -25,10 +23,14 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
+        int noRecordTimes = 0;
+
         bool sttFailed = false;
         string bingresponse = "";
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
+
+
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -51,7 +53,7 @@ namespace callbot
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Hi hi!", -1)
+                    GetRecordForText("Top of the day to you!", 2)
                 };
 
             return Task.FromResult(true);
@@ -81,56 +83,8 @@ namespace callbot
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
-            //string user = ConfigurationManager.AppSettings["RSId"];
-            //string private_key = ConfigurationManager.AppSettings["RSPassword"];
-            //RSAPI rsapi = new RSAPI(user, private_key);
-
-            //List<string> audioArr = new List<string>();
-            //audioMan am = new audioMan();
-
-            // get response from LUIS in text form
-            //if (response.Count > 0)
-            //{
-            //    silenceTimes = 0;
-            //    var actionList = new List<ActionBase>();
-
-            //    // there might be multiple replies from LUIS
-            //    foreach (var res in response)
-            //    {
-            //        logger.WriteToText("USER: ", res);
-            //        Debug.WriteLine($"Response ----- {res}");
-
-            //        // if LUIS does not return a topic but a sentence with question mark, use text to speech
-            //        //bool isEcho = res.Contains("?");
-            //        //if (isEcho) {
-            //        //SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
-            //        //// Configure the audio output. 
-            //        //MemoryStream ms = new MemoryStream();
-
-            //        //string tempPath = Path.GetTempPath();
-            //        //synth.SetOutputToWaveStream(ms);
-            //        //synth.Speak(res);
-            //        ////now convert to mp3 using LameEncoder or shell out to audiograbber
-            //        //am.ConvertWavStreamToMp3File(ref ms, $"{tempPath}Rate.mp3");
-
-            //        //audioArr.Add($"{tempPath}Rate.mp3");
-
-            //        //}
-            //        //else
-            //        //{
-            //        //use rs object to fetch appropriate url for audio based on each result given
-            //        //    audioArr.Add(rsapi.Call(res).Result);
-            //        //}
-            //    }
-            // if there is only 1 file, no point creating an object to combine the audio files, just use RS link
-
-
-            //am.callCombine(audioArr);
-            //actionList.Add(PlayAudioFile(am.azureUrl));
-
-
-            //actionList.Add(GetPromptForText(res, -1));
             var actionList = new List<ActionBase>();
+            
             if (bingresponse != "")
             {
 
@@ -139,7 +93,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Anybody there? Bye.",-1),
+                        GetPromptForText("Anybody there? Bye.", 2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -151,9 +105,17 @@ namespace callbot
 
                     //else identify words
                     string output = await ED.Reply(bingresponse);
+#if RELEASE
+                    //use bot framework voice, mode -1
                     Debug.WriteLine($"Bing response: {output}");
+                    actionList.Add(GetPromptForText(output, -1));
 
-                    actionList.Add(GetRecordForText(output, -1));
+
+#else
+                    //microsoft stt, mode 2
+                    actionList.Add(GetPromptForText(output, 2));
+#endif
+                    actionList.Add(GetRecordForText(string.Empty, -1));
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 }
             }
@@ -164,7 +126,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",-1)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?",2)
                     };
                     sttFailed = false;
                     silenceTimes = 0;
@@ -173,7 +135,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Something went wrong. Call again later.",-1),
+                        GetPromptForText("Something went wrong. Call again later.",2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -185,7 +147,7 @@ namespace callbot
                     silenceTimes++;
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetSilencePrompt(500)
+                        GetSilencePrompt()
                     };
                 }
             }
@@ -199,19 +161,14 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
-
-                //RSAPI test2 = new RSAPI(user, private_key);
-                //string replyAudioPath = test2.Call("sample").Result;
-
-
-                string replyAudioPath = "http://ec2-54-255-175-193.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
                 
+                string replyAudioPath = "http://ec2-54-255-210-15.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
 
@@ -227,7 +184,8 @@ namespace callbot
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse = b);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
-                
+
+
                 //AskLUIS test = new AskLUIS();
                 //String response = test.questionLUIS(activity.Text);
                 recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -235,7 +193,9 @@ namespace callbot
                     GetSilencePrompt()
                 };
 
-            } else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated") {
+            }
+            else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated")
+            {
                 //So if the caller hangs up, initiate hangout on bot
                 new Hangup() { OperationId = Guid.NewGuid().ToString() };
 
@@ -246,7 +206,7 @@ namespace callbot
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Bye bye!",-1),
+                        GetPromptForText("Bye bye!",2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -257,12 +217,11 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",-1)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?",2)
                     };
                 }
             }
-
-
+            
         }
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
@@ -306,12 +265,30 @@ namespace callbot
 
 
             }
+            else if (mode == 2)
+            {
+                // Configure the audio output. 
+                MemoryStream ms = new MemoryStream();
+                SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
+                audioMan am = new audioMan();
+                
+                string tempPath = Path.GetTempPath();
+                synth.SetOutputToWaveStream(ms);
+                synth.Speak(text);
+                //now convert to mp3 using LameEncoder or shell out to audiograbber
+                am.ConvertWavStreamToWav(ref ms, $"{tempPath}Rate.wav");
+
+                uri = new System.Uri(am.azureUrl);
+
+                var prompt = new Prompt { FileUri = uri };
+                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+
+
+            }
             else {
                 var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
                 return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
             }
-
         }
 
         private static PlayPrompt GetPromptForText(List<string> text)
@@ -329,7 +306,7 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 10)
+        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 1500)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };

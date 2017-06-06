@@ -205,27 +205,6 @@ namespace callbot
             //Console.WriteLine("result" + collectionID);
         }
 
-        //static void Main(string[] args)
-        //{
-        //    string user = "user";
-        //    string private_key = "a8b9e532120b6b5ce491d4b4a102266740d285ca32c76b6ec2b5dd1158177d25";
-
-        //    RSAPI test2 = new RSAPI(user, private_key);
-
-        //    test2.UploadResource("/home/bitnami/test/MaidwiththeFlaxenHair.mp3", "testmusictitle", "3");
-        //    //test2.DeleteCollection("2");
-        //    //test2.DeleteResource("5");
-        //    //test2.Call();
-
-        //    //foreach (string collectionId1 in new string[] {"8", "9", "10", "11", "13", "14", "15"}){
-        //    //    Console.WriteLine(collectionId1);
-        //    //    test2.DeleteCollection(collectionId1);
-        //    //}
-
-        //    Console.WriteLine("Press any key to exit");
-        //    Console.ReadKey();
-        //}
-
         public string sstpProtocol( string local_filePath )
         {
             string fileExtension = local_filePath.Split('.').Last();

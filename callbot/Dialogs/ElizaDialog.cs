@@ -14,8 +14,8 @@ namespace callbot.Dialogs
     public class ElizaDialog
     {
  
-        public Dictionary<string, string> reflection = new Dictionary<string, string>();
-        public Dictionary<string, List<string>> psychobabble = new Dictionary<string, List<string>>();
+        public static Dictionary<string, string> reflection = new Dictionary<string, string>();
+        public static Dictionary<string, List<string>> psychobabble = new Dictionary<string, List<string>>();
 
         public List<string> target = new List<string>(new string[34] {
             @"I need (.*)", @"Why don'?t you (.*)", @"Why can'?t I (.*)", @"I can'?t (.*)", @"I am (.*)", @"Are you (.*)", @"What (.*)", @"How (.*)",
