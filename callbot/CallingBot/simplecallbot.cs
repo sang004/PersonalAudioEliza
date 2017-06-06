@@ -11,6 +11,7 @@ using System.Configuration;
 using SSS = System.Speech.Synthesis;
 using System.IO;
 using System.Diagnostics;
+using Microsoft.Bot.Connector;
 
 namespace callbot
 {
@@ -30,11 +31,8 @@ namespace callbot
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
 
-
-
         public simplecallbot(ICallingBotService callingBotService)
         {
-
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
@@ -185,9 +183,6 @@ namespace callbot
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
 
-
-                //AskLUIS test = new AskLUIS();
-                //String response = test.questionLUIS(activity.Text);
                 recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     GetSilencePrompt()
