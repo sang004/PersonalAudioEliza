@@ -93,7 +93,7 @@ namespace callbot
             {
                 //await SendToBot(e.PhraseResponse.Results[0]);
                 _failedCallback(false);
-
+                _bingresponse(e.PhraseResponse.Results[0].DisplayText);
 
                 //await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).Last());
                 //responseJson = e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault().DisplayText;
@@ -103,6 +103,7 @@ namespace callbot
             else
             {
                 _failedCallback(true);
+                _bingresponse("");
             }
         }
 
@@ -191,13 +192,13 @@ namespace callbot
             }
 
             // if bing does not return anything
-            if (e.PhraseResponse.Results.Length > 0)
-            {
-                _bingresponse(e.PhraseResponse.Results[0].DisplayText);
-            }
-            else {
-                _bingresponse("");
-            }
+            //if (e.PhraseResponse.Results.Length > 0)
+            //{
+            //    _bingresponse(e.PhraseResponse.Results[0].DisplayText);
+            //}
+            //else {
+            //    _bingresponse("");
+            //}
         }
 
         private void WriteLine(string format, params object[] args)
