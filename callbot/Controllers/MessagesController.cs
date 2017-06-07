@@ -28,7 +28,6 @@ namespace callbot
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
             
-            
             if (activity.Type == ActivityTypes.Message)
             {
 
@@ -41,9 +40,16 @@ namespace callbot
                     userData.SetProperty<string>("Call", activity.Text);
                     await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
                 }
-                else if (activity.Text.ToLower().Contains("who")) {
+                else if (activity.Text.ToLower().Contains("record"))
+                {
                     var sentGreeting = userData.GetProperty<string>("Call");
                     Console.WriteLine(sentGreeting);
+                }
+                else {
+                    var client = new ConnectorClient(new Uri(activity.ServiceUrl));
+                    var outMessage = activity.CreateReply("I am not sure what you mean by: n Use: 'Call <name>' or 'Record <name>'");
+                    await client.Conversations.SendToConversationAsync(outMessage);
+                    
                 }
                 //await Conversation.SendAsync(activity, () => new LuisDialog());
             }

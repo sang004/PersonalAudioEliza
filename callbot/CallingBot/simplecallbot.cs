@@ -12,6 +12,9 @@ using SSS = System.Speech.Synthesis;
 using System.IO;
 using System.Diagnostics;
 using Microsoft.Bot.Connector;
+using System.Web.Http;
+using System.Net.Http;
+using System.Linq;
 
 namespace callbot
 {
@@ -31,22 +34,38 @@ namespace callbot
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
 
+        private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
+        private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
+
         public simplecallbot(ICallingBotService callingBotService)
         {
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
             this.CallingBotService = callingBotService;
-            
-
+                  
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
             CallingBotService.OnRecordCompleted += OnRecordCompleted;
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
         }
 
+        private async void getUser( Participant p ) {
+
+            
+            // create the activity and retrieve
+            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
+            var sentGreeting = userData.GetProperty<string>("Call");
+            
+        }
+
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
+            //get caller's information
+            var partipants = incomingCallEvent.IncomingCall.Participants;         
+            getUser(partipants.ElementAt(0));
+
             var id = Guid.NewGuid().ToString();
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
@@ -82,7 +101,6 @@ namespace callbot
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             var actionList = new List<ActionBase>();
-            
             if (bingresponse != "")
             {
 
@@ -165,7 +183,7 @@ namespace callbot
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-255-210-15.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-255-203-240.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);

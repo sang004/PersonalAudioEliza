@@ -22,7 +22,7 @@ namespace callbot
         {
             CallingConversation.RegisterCallingBot(c => new simplecallbot(c));
         }
-
+        
         // Callback route for Skype calling events.
         // Make sure to set the Microsoft.Bot.Builder.Calling.CallbackUrl in web.config
         [Route("callback")]
