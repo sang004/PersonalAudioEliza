@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using Microsoft.Bot.Builder.Dialogs;
 using callbot.Dialogs;
 using System.Configuration;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace callbot
 {
@@ -21,35 +23,40 @@ namespace callbot
         /// Receive a message from a user and reply to it
         /// </summary>
         /// 
-        private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
-        private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
-
 
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            
             if (activity.Type == ActivityTypes.Message)
             {
-
-                StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-                BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
+                SurveyDialog sd = new SurveyDialog();
 
                 //store data
                 if (activity.Text.ToLower().Contains("call"))
                 {
-                    userData.SetProperty<string>("Call", activity.Text);
-                    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
+                    var matches = Regex.Match(activity.Text.ToLower(), @"call\s?(.*).?");
+                    sd.setData(activity, "call", matches.Groups[1].Value);
+                    sd.setData(activity, "currAction", "call");
+
+                    Debug.WriteLine(await sd.getData(activity, "call"));
+                    Debug.WriteLine(await sd.getData(activity, "currentAction"));
+
+                    postReply(activity, $"Okay, done setting up {activity.Text}, please call in to continue :)");
                 }
                 else if (activity.Text.ToLower().Contains("record"))
                 {
-                    var sentGreeting = userData.GetProperty<string>("Call");
-                    Console.WriteLine(sentGreeting);
+                    var matches = Regex.Match(activity.Text.ToLower(), @"record\s?(.*).?");
+                    sd.setData(activity, "record", matches.Groups[1].Value);
+                    sd.setData(activity, "currAction", "record");
+
+                    Debug.WriteLine(await sd.getData(activity, "record"));
+                    Debug.WriteLine(await sd.getData(activity, "currentAction"));
+
+                    postReply(activity, $"Okay, done setting up {activity.Text}, please call in to continue :)");
                 }
-                else {
-                    var client = new ConnectorClient(new Uri(activity.ServiceUrl));
-                    var outMessage = activity.CreateReply("I am not sure what you mean by: n Use: 'Call <name>' or 'Record <name>'");
-                    await client.Conversations.SendToConversationAsync(outMessage);
-                    
+                else
+                {
+                    postReply(activity, $"I am not sure what you mean by {activity.Text}. Use: Call ***** or Record *****");
+                   
                 }
                 //await Conversation.SendAsync(activity, () => new LuisDialog());
             }
@@ -88,6 +95,14 @@ namespace callbot
             }
 
             return null;
+        }
+
+        private async void postReply(Activity activity, string msg)
+        {
+
+            var client = new ConnectorClient(new Uri(activity.ServiceUrl));
+            var outMessage = activity.CreateReply(msg);
+            await client.Conversations.SendToConversationAsync(outMessage);
         }
     }
 }
