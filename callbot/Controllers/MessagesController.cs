@@ -33,6 +33,8 @@ namespace callbot
                 //store data
                 if (activity.Text.ToLower().Contains("call"))
                 {
+                    // if call, extract name in user typed sentence and pass it to botstate userData update currentAction too
+                    // "call" as key
                     var matches = Regex.Match(activity.Text.ToLower(), @"call\s?(.*).?");
                     sd.setData(activity, "call", matches.Groups[1].Value);
                     sd.setData(activity, "currAction", "call");
@@ -44,6 +46,8 @@ namespace callbot
                 }
                 else if (activity.Text.ToLower().Contains("record"))
                 {
+                    // if call, extract name in user typed sentence and pass it to botstate userData update currentAction too
+                    // "record" as key
                     var matches = Regex.Match(activity.Text.ToLower(), @"record\s?(.*).?");
                     sd.setData(activity, "record", matches.Groups[1].Value);
                     sd.setData(activity, "currAction", "record");
@@ -55,6 +59,7 @@ namespace callbot
                 }
                 else
                 {
+                    //else reply with prompt in text
                     postReply(activity, $"I am not sure what you mean by {activity.Text}. Use: Call ***** or Record *****");
                    
                 }
@@ -99,7 +104,7 @@ namespace callbot
 
         private async void postReply(Activity activity, string msg)
         {
-
+            // creates a reply and post to user
             var client = new ConnectorClient(new Uri(activity.ServiceUrl));
             var outMessage = activity.CreateReply(msg);
             await client.Conversations.SendToConversationAsync(outMessage);

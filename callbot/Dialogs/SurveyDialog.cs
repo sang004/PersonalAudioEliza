@@ -11,22 +11,25 @@ namespace callbot.Dialogs
 {
     public class SurveyDialog
     {
+        // get variables from web.config
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
-
-               
+        
         public async Task<string> getData(Activity activity, string key) {
             string r = "";
             bool succeeded = false;
             int tries = 2;
 
+            //retry 2 times or break if set data succeeded.
             do
             {
+                //try catch handles lock in simultaneous access to userData
                 try
                 {
-
+                    //open user data from stateclient that connects to the bot itself on bot framework
                     StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
                     BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
+
                     r = userData.GetProperty<string>(key);
                     succeeded = true;
 
@@ -52,7 +55,8 @@ namespace callbot.Dialogs
                 {
                     StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
                     BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
-
+                    
+                    // different here that it sets data instead of get
                     userData.SetProperty<string>(key, value);
                     await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
                     succeeded = true;
