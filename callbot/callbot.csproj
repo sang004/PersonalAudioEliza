@@ -176,6 +176,7 @@
     <Compile Include="CallingBot\RSAPI.cs" />
     <Compile Include="Controllers\CallingController.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
+    <Compile Include="Dialogs\SurveyDialog.cs" />
     <Compile Include="Dialogs\ElizaDialog.cs" />
     <Compile Include="Dialogs\LuisDialog.cs" />
     <Compile Include="Global.asax.cs">
