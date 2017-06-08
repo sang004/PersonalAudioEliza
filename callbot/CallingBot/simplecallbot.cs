@@ -11,6 +11,8 @@ using System.Configuration;
 using SSS = System.Speech.Synthesis;
 using System.IO;
 using System.Diagnostics;
+using Microsoft.Bot.Connector;
+using System.Linq;
 
 namespace callbot
 {
@@ -25,8 +27,14 @@ namespace callbot
         int silenceTimes = 0;
         int noRecordTimes = 0;
 
+        private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
+        private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
+
         bool sttFailed = false;
         string bingresponse = "";
+
+        IEnumerable<Participant> participant = null;
+        private int recordNum = 0;
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
         private static audioMan am = new audioMan();
@@ -38,16 +46,29 @@ namespace callbot
                 throw new ArgumentNullException(nameof(callingBotService));
 
             this.CallingBotService = callingBotService;
-            
 
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
             CallingBotService.OnRecordCompleted += OnRecordCompleted;
+            CallingBotService.OnRecordCompleted += OnRecordCompletedAsync;
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
+        }
+
+        private async void getUser(Participant p)
+        {
+
+            // create the activity and retrieve
+            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
+            var sentGreeting = userData.GetProperty<string>("Call");
+
         }
 
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
+            recordNum = 0;
+            participant = incomingCallEvent.IncomingCall.Participants;
+
             var id = Guid.NewGuid().ToString();
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
@@ -148,21 +169,19 @@ namespace callbot
                     silenceTimes++;
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetSilencePrompt()
+                        GetRecordForText("I didn't catch that",2)
                     };
                 }
             }
             return Task.CompletedTask;
         }
 
-
-
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
@@ -215,11 +234,37 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",2)
+                        GetRecordForText("I didn't catch, would you kindly repeat?",2)
                     };
                 }
             }
             
+        }
+
+        private async Task OnRecordCompletedAsync(RecordOutcomeEvent recordOutcomeEvent)
+        {
+            string serviceUrl = "https://smba.trafficmanager.net/apis/";
+            MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
+
+            string recipientId = participant.ElementAt(0).Identity;
+            string botId = participant.ElementAt(1).Identity;
+            MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
+            ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
+
+
+            string text = ED.response[recordNum];
+
+           
+            IMessageActivity newMessage = Activity.CreateMessageActivity();
+            newMessage.Type = ActivityTypes.Message;
+            newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
+            newMessage.Conversation = new ConversationAccount(false, recipientId);
+            newMessage.Recipient = new ChannelAccount(recipientId);
+            newMessage.Text = "Please record the sentence:\n" + text;
+            
+            await connector.Conversations.SendToConversationAsync((Activity)newMessage);
+            recordNum++;
+
         }
 
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
