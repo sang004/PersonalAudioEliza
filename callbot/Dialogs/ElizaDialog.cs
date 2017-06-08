@@ -23,6 +23,162 @@ namespace callbot.Dialogs
             @"Can you (.*)", @"Can I (.*)", @"You are (.*)", @"I don'?t (.*)", @"I feel (.*)", @"I have (.*)", @"I would (.*)", @"Is there (.*)",
             @"My (.*)", @"You (.*)", @"Why (.*)", @"I want (.*)", @"(.*) mother (.*)", @"(.*) father (.*)", @"(.*) child (.*)", @"bye", @"(.*)"});
 
+        public List<string> response = new List<string>(new string[] {
+                                                                      "Why do you need that?",
+                                                                      "Would it really help you to get that?",
+                                                                      "Are you sure you need that?",
+
+                                                                      "Do you really think I don't?",
+                                                                      "Perhaps eventually I will.",
+                                                                      "Do you really want me to?",
+
+                                                                      "Do you think you should be able to?",
+                                                                      "If you could, what would you do?",
+                                                                      "Have you really tried?",
+                                                                      "I don't know, why can't you just do it?",
+
+                                                                      "How do you know you can't?",
+                                                                      "Perhaps you could, if you tried.",
+                                                                      "What would it take for you to do it?", 
+
+                                                                      "Did you come to me because of this?",
+                                                                      "How long have you been this way?",
+                                                                      "How do you feel about it?",
+
+
+                                                                      "Why does it matter?",
+                                                                      "Would you prefer it if I were not?",
+                                                                      "Perhaps you believe I am.",
+                                                                      "I may be - what do you think?",
+
+                                                                      "Why do you ask?",
+                                                                      "How would an answer to that help you?",
+                                                                      "What do you think?",
+
+                                                                      "How do you suppose?",
+                                                                      "Perhaps you can answer your own question.",
+                                                                      "What is it you're really asking?" ,
+
+                                                                       "Is that the real reason?",
+                                                                       "What other reasons come to mind?",
+                                                                       "Does that reason apply to anything else?",
+                                                                       "If that's true, what else must be true?" ,
+
+                                                                       "There are many times when no apology is needed.",
+                                                                       "What feelings do you have when you apologize?" ,
+
+                                                                       "Hello... I'm glad you could drop by today.",
+                                                                       "Hi there... how are you today?",
+                                                                       "Hello, how are you feeling today?" ,
+
+                                                                       "Do you doubt it?",
+                                                                       "Do you really think so?",
+                                                                       "But you're not sure?" ,
+
+                                                                       "Tell me more about your friends.",
+                                                                       "When you think of a friend, what comes to mind?",
+                                                                       "Why don't you tell me about a childhood friend?" ,
+
+                                                                       "You seem quite sure.",
+                                                                       "OK, but can you elaborate a bit?" ,
+
+                                                                       "Are you really talking about me?",
+                                                                       "Does it seem strange to talk to a computer?",
+                                                                       "How do computers make you feel?",
+                                                                       "Do you feel threatened by computers?" ,
+
+                                                                       "Do you think it is?",
+                                                                       "Perhaps it is -- what do you think?",
+                                                                       "If it were so, what would you do?",
+                                                                       "It could well be that." ,
+
+                                                                       "You seem very certain.",
+                                                                       "If I told you that it probably isn't, what would you feel?" ,
+
+                                                                       "What makes you think I can't?",
+                                                                       "If I could, then what?",
+                                                                       "Why do you ask?" ,
+
+                                                                       "Perhaps you don't want to.",
+                                                                       "Do you want to be able to?",
+                                                                       "If you could, would you?" ,
+
+                                                                       "Why do you think I am?",
+                                                                       "Does it please you to think that I am?",
+                                                                       "Perhaps you would like me to be.",
+                                                                       "Perhaps you're really talking about yourself?" ,
+
+
+                                                                       "Don't you really?",
+                                                                       "Why don't you?",
+                                                                       "Do you want to?" ,
+
+                                                                       "Good, tell me more about these feelings.",
+                                                                       "Do you often feel this way?",
+                                                                       "When do you usually feel this way?",
+                                                                       "When you feel this way, what do you do?" ,
+
+                                                                       "Why do you tell me this?",
+                                                                       "Have you really?",
+                                                                       "Now that you have, what will you do next?" ,
+
+                                                                       "Could you explain why you would?",
+                                                                       "Why would you?",
+                                                                       "Who else knows that?" ,
+
+                                                                       "Do you think there is?",
+                                                                       "It's likely that there is.",
+                                                                       "Would you like there to be?" ,
+
+                                                                       "I see.",
+                                                                       "Why do you say that?",
+                                                                       "How do you feel?" ,
+
+                                                                       "We should be discussing you, not me.",
+                                                                       "Why do you say that about me?",
+                                                                       "Why do you care?" ,
+
+
+                                                                       "Why don't you tell me the reason why?",
+                                                                       "Why do you think?" ,
+
+                                                                       "What would it mean to you if you got it?",
+                                                                       "Why?",
+                                                                       "What would you do if you got it?",
+                                                                       "All right, if you got this, then what would you do?" ,
+
+                                                                       "Tell me more about your mother..",
+                                                                       "What was your relationship with your mother like?",
+                                                                       "How do you feel about your mother?",
+                                                                       "How does this relate to your feelings today?",
+                                                                       "Good family relations are important." ,
+
+                                                                       "Tell me more about your father.",
+                                                                       "How did your father make you feel?",
+                                                                       "How do you feel about your father?",
+                                                                       "Does your relationship with your father relate to your feelings today?",
+                                                                       "Do you have trouble showing affection with your family?" ,
+
+                                                                       "Did you have close friends as a child?",
+                                                                       "What is your favorite childhood memory?",
+                                                                       "Do you remember any dreams or nightmares from childhood?",
+                                                                       "Did the other children sometimes tease you?",
+                                                                       "How do you think your childhood experiences relate to your feelings today?" ,
+
+                                                                       "Thank you for talking with me.",
+                                                                       "Good-bye." ,
+
+                                                                       "Please tell me more.",
+                                                                       "Let's change focus a bit... Tell me about something else.",
+                                                                       "Can you elaborate on that?",
+                                                                       "Why do you say that?",
+                                                                       "I see.",
+                                                                       "Very interesting.",
+                                                                       "I see.  And what does that tell you?",
+                                                                       "How does that make you feel?",
+                                                                       "How do you feel when you say that?" ,
+            });
+
         public ElizaDialog()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -271,6 +427,11 @@ namespace callbot.Dialogs
         {
             string response = "";
             List<string> result = new List<string>();
+
+            foreach(string key in psychobabble.Keys)
+            {
+                Debug.WriteLine(psychobabble[key]);
+            }
             
             foreach(string pattern in target)
             {
