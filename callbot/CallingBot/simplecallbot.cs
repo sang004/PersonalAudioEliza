@@ -50,21 +50,21 @@ namespace callbot
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
         }
 
-        private async void getUser( Participant p ) {
+        //private async void getUser( Participant p ) {
 
             
-            // create the activity and retrieve
-            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
-            var sentGreeting = userData.GetProperty<string>("Call");
+        //    // create the activity and retrieve
+        //    StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+        //    BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
+        //    var sentGreeting = userData.GetProperty<string>("Call");
             
-        }
+        //}
 
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
             //get caller's information
-            var partipants = incomingCallEvent.IncomingCall.Participants;         
-            getUser(partipants.ElementAt(0));
+            //var partipants = incomingCallEvent.IncomingCall.Participants;         
+            //getUser(partipants.ElementAt(0));
 
             var id = Guid.NewGuid().ToString();
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -177,7 +177,7 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];

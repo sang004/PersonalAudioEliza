@@ -97,6 +97,7 @@ namespace callbot
             }
             else if (message.Type == ActivityTypes.Ping)
             {
+               
             }
 
             return null;

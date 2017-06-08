@@ -258,10 +258,10 @@ namespace callbot.Dialogs
             string[] tokens = match.ToLower().Split();
             for (int i = 0; i < tokens.Length; i++)
             {
-                string token = tokens[i];
+                string token = Regex.Replace(tokens[i], @"[^\w\s]", "");
                 if (reflection.ContainsKey(token))
                 {
-                    tokens[i] = reflection[token];
+                    tokens[i] = tokens[i].Replace(token, reflection[token]);
                 }
             }
             return string.Join(" ", tokens);

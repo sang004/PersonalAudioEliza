@@ -97,7 +97,7 @@ namespace callbot
             file.Close();
             ms.Close();
 
-            azureFunc(savetofilename);
+            //azureFunc(savetofilename);
         }
 
         public void deleteBlob( string fileName ) {
