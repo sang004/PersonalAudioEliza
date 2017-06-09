@@ -23,7 +23,6 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
-        int noRecordTimes = 0;
 
         bool sttFailed = false;
         string bingresponse = "";
@@ -93,7 +92,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Anybody there? Bye.", 2),
+                        GetPromptForText("This has been a great session! Bye bye.", 2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -105,19 +104,21 @@ namespace callbot
 
                     //else identify words
                     string output = await ED.Reply(bingresponse);
+                    
 #if RELEASE
                     //use bot framework voice, mode -1
                     Debug.WriteLine($"Bing response: {output}");
-                    actionList.Add(GetPromptForText(output, -1));
+                    actionList.Add(GetRecordForText(output, -1));
 
 
 #else
                     //microsoft stt, mode 2
-                    actionList.Add(GetPromptForText(output, 2));
+                    actionList.Add(GetRecordForText(output, 2));
 #endif
-                    actionList.Add(GetRecordForText(string.Empty, -1));
+                    //actionList.Add(GetRecordForText(string.Empty, -1));
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 }
+                bingresponse = "";
             }
              
             else
@@ -126,7 +127,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",2)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?", 2)
                     };
                     sttFailed = false;
                     silenceTimes++;
@@ -304,7 +305,7 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 300)
+        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 800)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
