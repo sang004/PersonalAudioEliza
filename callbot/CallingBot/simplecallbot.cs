@@ -82,8 +82,8 @@ namespace callbot
                 incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Top of the day to you!")
-                };
+                    GetPromptForText("Top of the day to you!", participant)
+            };
 
             }
             return Task.FromResult(true);
@@ -488,6 +488,61 @@ namespace callbot
             }
             if (prompts.Count == 0)
                 return GetSilencePrompt();
+            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
+        }
+
+        private static PlayPrompt GetPromptForText(string text, IEnumerable<Participant> participant)
+        {
+            var prompts = new List<Prompt>();
+
+            string serviceUrl = "https://smba.trafficmanager.net/apis/";
+            MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
+
+            string recipientId = participant.ElementAt(0).Identity;
+            string botId = participant.ElementAt(1).Identity;
+            MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
+            ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
+
+
+            List<CardAction> cardButtons = new List<CardAction>();
+
+            CardAction plButton1 = new CardAction()
+            {
+                Value = "call",
+                Type = ActionTypes.PostBack,
+                Title = "Call"
+            };
+            CardAction plButton2 = new CardAction()
+            {
+                Value = "record",
+                Type = ActionTypes.PostBack,
+                Title = "Record"
+            };
+
+            cardButtons.Add(plButton1);
+            cardButtons.Add(plButton2);
+
+            var heroCard = new HeroCard()
+            {
+                Text = "Choose your destiny!",
+                Buttons = cardButtons
+            };
+
+            IMessageActivity newMessage = Activity.CreateMessageActivity();
+            newMessage.Type = ActivityTypes.Message;
+            newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
+            newMessage.Conversation = new ConversationAccount(false, recipientId);
+            newMessage.Recipient = new ChannelAccount(recipientId);
+
+            newMessage.Attachments = new List<Attachment> {
+                heroCard.ToAttachment()
+            };
+
+            var response = connector.Conversations.SendToConversation((Activity)newMessage);
+
+            //logger.WriteToText("BOT: ", txt);
+            prompts.Add(new Prompt { Value = text, Voice = VoiceGender.Female });
+            
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 

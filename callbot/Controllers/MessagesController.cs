@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
 using Microsoft.Bot.Builder.Dialogs;
 using callbot.Dialogs;
 
@@ -19,13 +18,24 @@ namespace callbot
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
+        /// 
+        
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            
-            
-            if (activity.Type == ActivityTypes.Message)
+            SurveyDialog sd = new SurveyDialog();
+
+            if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
             {
-                await Conversation.SendAsync(activity, () => new LuisDialog());
+                sd.setData(activity, "currAction", activity.Text.ToLower());
+                postReply(activity, $"Who would you like to {activity.Text.ToLower()}?");
+
+                //Debug.WriteLine(await sd.getData(activity, "call"));
+                //Debug.WriteLine(await sd.getData(activity, "currentAction"));
+
+            }
+            else if (activity.Text.ToLower().Contains("call "))
+            {
+                sd.setData(activity, "who", activity.Text.ToLower());
             }
             else
             {
@@ -62,6 +72,14 @@ namespace callbot
             }
 
             return null;
+        }
+
+        private async void postReply(Activity activity, string msg)
+        {
+            // creates a reply and post to user
+            var client = new ConnectorClient(new Uri(activity.ServiceUrl));
+            var outMessage = activity.CreateReply(msg);
+            await client.Conversations.SendToConversationAsync(outMessage);
         }
     }
 }
