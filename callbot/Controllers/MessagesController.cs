@@ -24,7 +24,7 @@ namespace callbot
         {
             SurveyDialog sd = new SurveyDialog();
 
-            if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
+            if (activity.Text.ToLower().Contains("Call") || activity.Text.ToLower().Contains("Record"))
             {
                 sd.setData(activity, "currAction", activity.Text.ToLower());
                 postReply(activity, $"Who would you like to {activity.Text.ToLower()}?");
@@ -32,7 +32,7 @@ namespace callbot
                 //Debug.WriteLine(await sd.getData(activity, "currentAction"));
 
             }
-            else if (activity.Text.ToLower().Contains("call "))
+            else if (activity.Text.ToLower().Contains("as"))
             {                
                 sd.setData(activity, "who", activity.Text.ToLower());
             }
