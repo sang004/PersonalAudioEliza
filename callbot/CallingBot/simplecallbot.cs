@@ -118,7 +118,7 @@ namespace callbot
                 Thread.Sleep(2000);
 
                 do { Actmode = userData.GetProperty<string>("currAction"); } while (Actmode.Equals("None"));
-                await SendRecordMessage("Who?");
+                await SendRecordMessage("as who?");
                 do { whoGuy = userData.GetProperty<string>("who"); } while (whoGuy.Equals("None"));
 
                 isSet = true;

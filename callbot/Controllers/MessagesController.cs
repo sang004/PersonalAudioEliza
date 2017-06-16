@@ -27,7 +27,6 @@ namespace callbot
             if (activity.Text.ToLower().Contains("Call") || activity.Text.ToLower().Contains("Record"))
             {
                 sd.setData(activity, "currAction", activity.Text.ToLower());
-                postReply(activity, $"Who would you like to {activity.Text.ToLower()}?");
                 //Debug.WriteLine(await sd.getData(activity, "call"));
                 //Debug.WriteLine(await sd.getData(activity, "currentAction"));
 
@@ -36,10 +35,10 @@ namespace callbot
             {                
                 sd.setData(activity, "who", activity.Text.ToLower());
             }
-            else
-            {
-                HandleSystemMessage(activity);
-            }
+            //else
+            //{
+            //    HandleSystemMessage(activity);
+            //}
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
