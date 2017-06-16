@@ -26,9 +26,11 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
-        int isSet = 0;
         //string mode = "Call";
         string mode = "call";
+        bool isSet = false;
+        string Actmode = "";
+        string whoGuy = "";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
@@ -70,16 +72,10 @@ namespace callbot
             bingresponse = "";
             string Actmode = "";
 
-            //if (isSet == 0)
-            //{
-            //    participant = incomingCallEvent.IncomingCall.Participants;
+            participant = incomingCallEvent.IncomingCall.Participants;
 
-            //    getUserData(participant);
-            //    //userData.SetProperty<string>("currAction", "None");
-            //    Actmode = "None";
-            //    isSet++;
-            //}
-            
+            getUserData(participant);
+
             var id = Guid.NewGuid().ToString();
 
             if (mode.Equals("record"))
@@ -99,15 +95,6 @@ namespace callbot
                 };
 
             }
-            else {
-                
-                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                {
-                    new Answer { OperationId = id },
-                    GetRecordForText("What do you wanna do?")
-                };
-
-            }
                 
                 
             return Task.FromResult(true);
@@ -118,29 +105,55 @@ namespace callbot
         {
             Debug.WriteLine("###################Onplayprompt");
             var actionList = new List<ActionBase>();
+            
 
-
-            if (bingresponse != "")
+            // only run once when it first comes into this function
+            if (isSet == false)
             {
-                silenceTimes = 0;
+                //get click input here
+                userData.SetProperty<string>("currAction", "None");
+                userData.SetProperty<string>("who", "None");
 
-                // if its bye
-                if (bingresponse.ToLower().Contains("bye"))
+                waitForClick(participant);
+                Thread.Sleep(2000);
+
+                do { Actmode = userData.GetProperty<string>("currAction"); } while (Actmode.Equals("None"));
+                await SendRecordMessage("Who?");
+                do { whoGuy = userData.GetProperty<string>("who"); } while (whoGuy.Equals("None"));
+
+                isSet = true;
+            }
+
+            if (Actmode.Equals("Record"))
+            {
+                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                        {
+                            GetRecordForMessage()
+                        };
+            }
+            else
+            {
+                if (bingresponse != "")
                 {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    silenceTimes = 0;
+
+                    // if its bye
+                    if (bingresponse.ToLower().Contains("bye"))
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         GetPromptForText("Anybody there? Bye.", 2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
-                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                    silenceTimes = 0;
+                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                        silenceTimes = 0;
 
-                }
-                else
-                {
+                    }
+                    else
+                    {
 
-                    //else identify words
-                    string output = await ED.Reply(bingresponse);
+                        //else identify words
+                        string output = await ED.Reply(bingresponse);
 #if RELEASE
                     //use bot framework voice, mode -1
                     Debug.WriteLine($"Bing response: {output}");
@@ -148,53 +161,46 @@ namespace callbot
 
 
 #else
-                    //microsoft stt, mode 2
-                    actionList.Add(GetPromptForText(output, 2));
+                        //microsoft stt, mode 2
+                        actionList.Add(GetPromptForText(output, 2));
 #endif
-                    actionList.Add(GetRecordForText(string.Empty, mode: -1));
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
+                        actionList.Add(GetRecordForText(string.Empty, mode: -1));
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
+                    }
                 }
-            }
 
-            else
-            {
-                if (sttFailed)
+                else
                 {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    if (sttFailed)
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         GetRecordForText("I didn't catch that, would you kindly repeat?")
                     };
-                    sttFailed = false;
-                    silenceTimes++;
+                        sttFailed = false;
+                        silenceTimes++;
 
-                }
-                else if (silenceTimes > 2)
-                {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    }
+                    else if (silenceTimes > 2)
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         GetPromptForText("Is anybody there? Bye.",2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
-                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                    silenceTimes = 0;
-                }
-                else
-                {
-                    if (mode.Equals("Record"))
-                    {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                        {
-                            GetRecordForMessage()
-                        };
+                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                        silenceTimes = 0;
                     }
                     else
                     {
+                     
                         //last resort, listen longer
                         silenceTimes++;
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             GetRecordForText("I didn't catch that")
                         };
+                        
                     }
                 }
             }
@@ -421,24 +427,32 @@ namespace callbot
             }
         }
 
-        private async Task SendRecordMessage()
+        private async Task SendRecordMessage( string msg = "" )
         {
             Debug.WriteLine("#################SEND MESSAGE  Record Number:" + recordNum + "silence time: " + silenceTimes);
+            string finalMsg = "";
 
             string recipientId = participant.ElementAt(0).Identity;
             string botId = participant.ElementAt(1).Identity;
             MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
             ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
 
-            string text = ED.response[recordNum];
-
+            if (msg.Equals(""))
+            {
+                finalMsg = msg;
+            }
+            else
+            {
+                string text = ED.response[recordNum];
+                finalMsg = "Please record the sentence:\n" + text;
+            }
 
             IMessageActivity newMessage = Activity.CreateMessageActivity();
             newMessage.Type = ActivityTypes.Message;
             newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
             newMessage.Conversation = new ConversationAccount(false, recipientId);
             newMessage.Recipient = new ChannelAccount(recipientId);
-            newMessage.Text = "Please record the sentence:\n" + text;
+            newMessage.Text = finalMsg;
 
             await connector.Conversations.SendToConversationAsync((Activity)newMessage);
         }
@@ -534,13 +548,13 @@ namespace callbot
 
             CardAction plButton1 = new CardAction()
             {
-                Value = "call",
+                Value = "Who do you want to call?",
                 Type = ActionTypes.PostBack,
                 Title = "Call"
             };
             CardAction plButton2 = new CardAction()
             {
-                Value = "record",
+                Value = "Who do you want to record as?",
                 Type = ActionTypes.PostBack,
                 Title = "Record"
             };
