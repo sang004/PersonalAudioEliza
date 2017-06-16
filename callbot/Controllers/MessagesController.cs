@@ -28,13 +28,12 @@ namespace callbot
             {
                 sd.setData(activity, "currAction", activity.Text.ToLower());
                 postReply(activity, $"Who would you like to {activity.Text.ToLower()}?");
-
                 //Debug.WriteLine(await sd.getData(activity, "call"));
                 //Debug.WriteLine(await sd.getData(activity, "currentAction"));
 
             }
             else if (activity.Text.ToLower().Contains("call "))
-            {
+            {                
                 sd.setData(activity, "who", activity.Text.ToLower());
             }
             else

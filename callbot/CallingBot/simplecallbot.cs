@@ -13,6 +13,7 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.Bot.Connector;
 using System.Linq;
+using System.Threading;
 
 namespace callbot
 {
@@ -25,16 +26,18 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
+        int isSet = 0;
         //string mode = "Call";
-        string mode = "Record";
+        string mode = "call";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
 
 
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
-        MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
-
+        private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
+        private StateClient stateClient;
+        private BotData userData;
 
         bool sttFailed = false;
         string bingresponse = "";
@@ -47,7 +50,7 @@ namespace callbot
 
         public simplecallbot(ICallingBotService callingBotService)
         {
-
+      
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
@@ -65,11 +68,21 @@ namespace callbot
             recordNum = -1;
             sttFailed = false;
             bingresponse = "";
-            participant = incomingCallEvent.IncomingCall.Participants;
+            string Actmode = "";
 
+            //if (isSet == 0)
+            //{
+            //    participant = incomingCallEvent.IncomingCall.Participants;
+
+            //    getUserData(participant);
+            //    //userData.SetProperty<string>("currAction", "None");
+            //    Actmode = "None";
+            //    isSet++;
+            //}
+            
             var id = Guid.NewGuid().ToString();
 
-            if (mode.Equals("Record"))
+            if (mode.Equals("record"))
             {
                 incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
@@ -77,22 +90,35 @@ namespace callbot
                     GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2)
                 };
             }
-            else
+            else if (mode.Equals("call"))
             {
                 incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetPromptForText("Top of the day to you!", participant)
-            };
+                    GetRecordForText("Top of the day to you!")
+                };
 
             }
+            else {
+                
+                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                {
+                    new Answer { OperationId = id },
+                    GetRecordForText("What do you wanna do?")
+                };
+
+            }
+                
+                
             return Task.FromResult(true);
         }
+
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             Debug.WriteLine("###################Onplayprompt");
             var actionList = new List<ActionBase>();
+
 
             if (bingresponse != "")
             {
@@ -257,17 +283,17 @@ namespace callbot
         {
             //logger.uploadToRS();
             hangupOutcomeEvent.ResultingWorkflow = null;
+            userData.SetProperty<string>("currAction", "None");
             return Task.FromResult(true);
         }
 
-        private async void getUser(Participant p)
+        private void getUserData(IEnumerable<Participant> p)
         {
 
             // create the activity and retrieve
-            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
-            var sentGreeting = userData.GetProperty<string>("Call");
-
+            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            userData = stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity).Result;
+           
         }
 
         private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
@@ -302,11 +328,13 @@ namespace callbot
         private ActionBase GetRecordForText(string promptText, bool playbeep = false, int mode = 2, int silenceTimeout = 3)
         {
             PlayPrompt prompt;
-            if (string.IsNullOrEmpty(promptText))
-                prompt = null;
-            else
-                prompt = GetPromptForText(promptText, mode);
             var id = Guid.NewGuid().ToString();
+            
+                if (string.IsNullOrEmpty(promptText))
+                    prompt = null;
+                else
+                    prompt = GetPromptForText(promptText, mode);
+
 
             return SetRecord(id, prompt, playbeep, silenceTimeout);
         }
@@ -323,13 +351,13 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-255-210-15.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-169-78-71.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -491,9 +519,8 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private static PlayPrompt GetPromptForText(string text, IEnumerable<Participant> participant)
+        private void waitForClick (IEnumerable<Participant> participant)
         {
-            var prompts = new List<Prompt>();
 
             string serviceUrl = "https://smba.trafficmanager.net/apis/";
             MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
@@ -502,7 +529,6 @@ namespace callbot
             string botId = participant.ElementAt(1).Identity;
             MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
             ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
-
 
             List<CardAction> cardButtons = new List<CardAction>();
 
@@ -539,11 +565,8 @@ namespace callbot
             };
 
             var response = connector.Conversations.SendToConversation((Activity)newMessage);
-
-            //logger.WriteToText("BOT: ", txt);
-            prompts.Add(new Prompt { Value = text, Voice = VoiceGender.Female });
             
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
+            //logger.WriteToText("BOT: ", txt);
         }
 
         private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 300)
