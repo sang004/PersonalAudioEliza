@@ -116,7 +116,7 @@ namespace callbot
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
         }
 
-        private void azureFunc(string localPath)
+        private string azureFunc(string localPath)
         {
 
             // Let's set up our connection for the account and store the name and key in app.config.           
@@ -153,9 +153,11 @@ namespace callbot
                 appBlob.UploadFromFile(localPath);
                 Console.WriteLine(appBlob.Uri.AbsoluteUri);
                 azureUrl = appBlob.Uri.AbsoluteUri;
+                return azureUrl;
             }
             catch {
                 Console.WriteLine("GG");
+                return "";
             }
 
         }
