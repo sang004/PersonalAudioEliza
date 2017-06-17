@@ -25,8 +25,9 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
-        //string mode = "Call";
-        string mode = "Record";
+        string mode = "Call";
+        //string mode = "Record";
+        string userName = "Alice";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
@@ -44,6 +45,8 @@ namespace callbot
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
         private static audioMan am = new audioMan();
+        private RSAPI RS = new RSAPI(ConfigurationManager.AppSettings["RSId"], ConfigurationManager.AppSettings["RSPassword"]);
+        //RS. ConfigurationManager.AppSettings("RSId", ConfigurationManager.AppSettings("RSPassword");
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -66,6 +69,7 @@ namespace callbot
             sttFailed = false;
             bingresponse = "";
             participant = incomingCallEvent.IncomingCall.Participants;
+            getUser(participant.ElementAt(0));
 
             var id = Guid.NewGuid().ToString();
 
@@ -175,6 +179,84 @@ namespace callbot
             return Task.CompletedTask;
         }
 
+        private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
+        {
+            //logger.uploadToRS();
+            hangupOutcomeEvent.ResultingWorkflow = null;
+            return Task.FromResult(true);
+        }
+
+        private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
+        {
+            if (mode == "Record")
+            {
+                await RecordOnRecordCompleted(recordOutcomeEvent);
+            }
+            else
+            {
+                await CallOnRecordCompleted(recordOutcomeEvent);
+            }
+        }
+
+        private async void getUser(Participant p)
+        {
+
+            // create the activity and retrieve
+            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
+            var sentGreeting = userData.GetProperty<string>("Call");
+            Debug.WriteLine("--------" + sentGreeting);
+
+        }
+
+        private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
+        {
+            return new Record()
+            {
+                OperationId = id,
+                PlayPrompt = prompt,
+                MaxDurationInSeconds = 8,
+                InitialSilenceTimeoutInSeconds = 3,
+                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
+                PlayBeep = playBeep,
+                RecordingFormat = RecordingFormat.Wav,
+                StopTones = new List<char> { '#' }
+            };
+        }
+
+        private Record SetRecord(string id, bool playBeep, int maxSilenceTimeout)
+        {
+            return new Record()
+            {
+                OperationId = id,
+                MaxDurationInSeconds = 8,
+                InitialSilenceTimeoutInSeconds = 3,
+                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
+                PlayBeep = playBeep,
+                RecordingFormat = RecordingFormat.Wav,
+                StopTones = new List<char> { '#' }
+            };
+        }
+
+        private ActionBase GetRecordForText(string promptText, bool playbeep = false, int mode = 2, int silenceTimeout = 3)
+        {
+            PlayPrompt prompt;
+            if (string.IsNullOrEmpty(promptText))
+                prompt = null;
+            else
+                prompt = GetPromptForText(promptText, mode);
+            var id = Guid.NewGuid().ToString();
+
+            return SetRecord(id, prompt, playbeep, silenceTimeout);
+        }
+
+        private ActionBase GetRecordForMessage()
+        {
+            var id = Guid.NewGuid().ToString();
+
+            return SetRecord(id, true, 2);
+        }
+
         private async Task RecordOnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             Debug.WriteLine("00000");
@@ -189,7 +271,8 @@ namespace callbot
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
-                    am.ConvertWavStreamToWav(ref ms, "C:\\Users\\Administrator\\Documents\\audio_records\\record_" + recordNum + ".wav");
+                    string filePath = "C:\\Users\\Administrator\\Documents\\audio_records\\record_" + recordNum + ".wav";
+                    am.ConvertWavStreamToWav(ref ms, filePath);
                     recordNum++;
                     if (recordNum < 3)
                     {
@@ -199,8 +282,19 @@ namespace callbot
                             GetRecordForMessage()
                         };
                     }
+                    // all record done
                     else
                     {
+                        string folderPath = "C:\\Users\\Administrator\\Documents\\audio_records\\";
+                        DirectoryInfo d = new DirectoryInfo(folderPath);
+
+                        foreach (var file in d.GetFiles("*.wav"))
+                        {
+                            Debug.WriteLine(file.ToString());
+                            string azureUrl = am.azureFunc(folderPath + file.ToString());
+                            Debug.WriteLine("*********" + azureUrl);
+                            RS.UploadResource(azureUrl, file.ToString());
+                        }
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             GetRecordForText("Record completeted, bye!", silenceTimeout: 2),
@@ -253,73 +347,10 @@ namespace callbot
             }
         }
 
-        private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
-        {
-            //logger.uploadToRS();
-            hangupOutcomeEvent.ResultingWorkflow = null;
-            return Task.FromResult(true);
-        }
-
-        private async void getUser(Participant p)
-        {
-
-            // create the activity and retrieve
-            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
-            var sentGreeting = userData.GetProperty<string>("Call");
-
-        }
-
-        private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
-        {
-            return new Record()
-            {
-                OperationId = id,
-                PlayPrompt = prompt,
-                MaxDurationInSeconds = 8,
-                InitialSilenceTimeoutInSeconds = 3,
-                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
-                PlayBeep = playBeep,
-                RecordingFormat = RecordingFormat.Wav,
-                StopTones = new List<char> { '#' }
-            };
-        }
-
-        private Record SetRecord(string id, bool playBeep, int maxSilenceTimeout)
-        {
-            return new Record()
-            {
-                OperationId = id,
-                MaxDurationInSeconds = 8,
-                InitialSilenceTimeoutInSeconds = 3,
-                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
-                PlayBeep = playBeep,
-                RecordingFormat = RecordingFormat.Wav,
-                StopTones = new List<char> { '#' }
-            };
-        }
-
-        private ActionBase GetRecordForText(string promptText, bool playbeep = false, int mode = 2, int silenceTimeout = 3)
-        {
-            PlayPrompt prompt;
-            if (string.IsNullOrEmpty(promptText))
-                prompt = null;
-            else
-                prompt = GetPromptForText(promptText, mode);
-            var id = Guid.NewGuid().ToString();
-
-            return SetRecord(id, prompt, playbeep, silenceTimeout);
-        }
-
-        private ActionBase GetRecordForMessage()
-        {
-            var id = Guid.NewGuid().ToString();
-
-            return SetRecord(id, true, 2);
-        }
-
         private async Task CallOnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
+            Debug.WriteLine("00000");
+            Debug.WriteLine(recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success);
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
@@ -381,17 +412,6 @@ namespace callbot
 
         }
 
-        private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
-        {
-            if (mode == "Record")
-            {
-                await RecordOnRecordCompleted(recordOutcomeEvent);
-            }
-            else
-            {
-                await CallOnRecordCompleted(recordOutcomeEvent);
-            }
-        }
 
         private async Task SendRecordMessage()
         {
