@@ -127,7 +127,7 @@ namespace callbot
                 {
                     if(bingresponse != "") { 
                     silenceTimes = 0;
-
+                   
                     // if its bye
                     if (bingresponse.ToLower().Contains("bye"))
                     {
@@ -142,17 +142,22 @@ namespace callbot
                     }
                     else
                     {
-
                         //else identify words
                         string output = await ED.Reply(bingresponse);
 #if RELEASE
                         //use bot framework voice, mode -1
                         Debug.WriteLine($"Bing response: {output}");
                         actionList.Add(GetPromptForText(output, -1));
-
-
+                            
 #else
                         //microsoft stt, mode 2
+                        //string user = ConfigurationManager.AppSettings["RSId"];
+                        //string private_key = ConfigurationManager.AppSettings["RSPassword"];
+                        //RSAPI rsapi = new RSAPI(user, private_key);
+
+                        //string path = rsapi.Call(output).Result;
+                        //actionList.Add(PlayAudioFile(path));
+
                         actionList.Add(GetPromptForText(output, 2));
 #endif
                         actionList.Add(GetRecordForText(string.Empty, mode: -1));
