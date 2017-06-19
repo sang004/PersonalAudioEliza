@@ -26,16 +26,13 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
-        //string mode = "Call";
-        string mode = "call";
         static bool isSet = false;
-        string Actmode = "";
-        string whoGuy = "";
+        string activeMode = "";
+        string activeAcc = "";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
-
-
+        
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
         private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
         private StateClient stateClient;
@@ -70,32 +67,16 @@ namespace callbot
             recordNum = -1;
             sttFailed = false;
             bingresponse = "";
-            string Actmode = "";
 
             participant = incomingCallEvent.IncomingCall.Participants;
-
-
             var id = Guid.NewGuid().ToString();
-
-            if (mode.Equals("record"))
+            
+            incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
-                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                {
-                    new Answer { OperationId = id },
-                    GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2)
-                };
-            }
-            else if (mode.Equals("call"))
-            {
-                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                {
-                    new Answer { OperationId = id },
-                    GetRecordForText("Top of the day to you! What would you like to do today?")
-                };
-
-            }
-                
-                
+                new Answer { OperationId = id },
+                GetPromptForText("Top of the day to you! What would you like to do today?",2)
+            };
+            
             return Task.FromResult(true);
         }
 
@@ -104,49 +85,57 @@ namespace callbot
         {
             Debug.WriteLine("###################Onplayprompt");
             var actionList = new List<ActionBase>();
-            
 
+            Debug.WriteLine($"#################CreateRichCard when isSet == {isSet}");
             // only run once when it first comes into this function
             if (isSet == false)
             {
                 //get click input here
-                waitForClick(participant);
-                //Thread.Sleep(2500);
-                await setUserData(participant, "currAction", "None");
-                await setUserData(participant, "who", "None");
+                genResponseCard(participant);
 
-                do
-                { Actmode = await getUserData(participant, "currAction"); } while (Actmode.Equals("None"));
-                Debug.WriteLine($"ACTION: {Actmode}");
-                do { whoGuy = await getUserData(participant, "who"); } while (whoGuy.Equals("None"));
-                Debug.WriteLine($"WHO: {whoGuy}");
+                // reset all settings at start of call
+                await setUserData(participant, "activeMode", "None");
+                await setUserData(participant, "activeAcc", "None");
+
+                //loop and get user persistant data
+                do { activeMode = await getUserData(participant, "activeMode"); } while (activeMode.Equals("None"));
+                Debug.WriteLine($"ACTION: {activeMode}");
+                await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
+                do { activeAcc = await getUserData(participant, "activeAcc"); } while (activeAcc.Equals("None"));
+                Debug.WriteLine($"WHO: {activeAcc}");
                 
                 isSet = true;
             }
 
-            if (Actmode.Equals("record"))
+            if (activeMode.Equals("record"))
             {
                 if (recordNum == -1) {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>{ GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
                 }
                 else {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>{ GetRecordForMessage() };
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForMessage() };
                 }
             }
             else
             {
-                if (bingresponse != "")
+                if (recordNum == -1)
                 {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
+                    recordNum++;
+                }
+                else
+                {
+                    if(bingresponse != "") { 
                     silenceTimes = 0;
 
                     // if its bye
                     if (bingresponse.ToLower().Contains("bye"))
                     {
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                    {
-                        GetPromptForText("Anybody there? Bye.", 2),
-                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                    };
+                        {
+                            GetPromptForText("Anybody there? Bye.", 2),
+                            new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                        };
                         playPromptOutcomeEvent.ResultingWorkflow.Links = null;
                         silenceTimes = 0;
 
@@ -157,9 +146,9 @@ namespace callbot
                         //else identify words
                         string output = await ED.Reply(bingresponse);
 #if RELEASE
-                    //use bot framework voice, mode -1
-                    Debug.WriteLine($"Bing response: {output}");
-                    actionList.Add(GetPromptForText(output, -1));
+                        //use bot framework voice, mode -1
+                        Debug.WriteLine($"Bing response: {output}");
+                        actionList.Add(GetPromptForText(output, -1));
 
 
 #else
@@ -170,7 +159,6 @@ namespace callbot
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                     }
                 }
-
                 else
                 {
                     if (sttFailed)
@@ -195,16 +183,17 @@ namespace callbot
                     }
                     else
                     {
-                     
+
                         //last resort, listen longer
                         silenceTimes++;
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             GetRecordForText("I didn't catch that")
                         };
-                        
+
                     }
                 }
+            }
             }
             return Task.CompletedTask;
         }
@@ -297,27 +286,23 @@ namespace callbot
 
         private async Task<string> getUserData(IEnumerable<Participant> p, string field)
         {
-
             // create the activity and retrieve
             stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
             userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
 
             return userData.GetProperty<string>(field);
-
-
+            
         }
 
         private async Task setUserData(IEnumerable<Participant> p, string field, string value)
         {
-
             // create the activity and retrieve
             stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
             userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
 
             userData.SetProperty<string>(field, value);
             await stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
-
-
+            
         }
 
         private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
@@ -435,7 +420,7 @@ namespace callbot
 
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
-            if (mode == "Record")
+            if (activeMode.Equals("Record"))
             {
                 await RecordOnRecordCompleted(recordOutcomeEvent);
             }
@@ -455,7 +440,7 @@ namespace callbot
             MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
             ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
 
-            if (msg.Equals(""))
+            if (! msg.Equals(""))
             {
                 finalMsg = msg;
             }
@@ -551,7 +536,7 @@ namespace callbot
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
-        private void waitForClick (IEnumerable<Participant> participant)
+        private void genResponseCard(IEnumerable<Participant> participant)
         {
 
             string serviceUrl = "https://smba.trafficmanager.net/apis/";
@@ -566,15 +551,15 @@ namespace callbot
 
             CardAction plButton1 = new CardAction()
             {
-                Value = "Call",
+                Value = "call",
                 Type = ActionTypes.PostBack,
-                Title = "Call"
+                Title = "call"
             };
             CardAction plButton2 = new CardAction()
             {
-                Value = "Record",
+                Value = "record",
                 Type = ActionTypes.PostBack,
-                Title = "Record"
+                Title = "record"
             };
 
             cardButtons.Add(plButton1);

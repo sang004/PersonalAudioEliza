@@ -24,22 +24,27 @@ namespace callbot
         {
             SurveyDialog sd = new SurveyDialog();
 
-            if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
+            //get current botstate userdata and see if the settings required configuration, else give generic response
+            string currMode = await sd.getData(activity, "activeMode");
+            string currAcc = await sd.getData(activity, "activeAcc");
+            
+            if (currMode == "None" || currAcc == "None")
             {
-                sd.setData(activity, "currAction", activity.Text.ToLower());
-                postReply(activity, $"{activity.Text.ToLower()} as who?");
-                //Debug.WriteLine(await sd.getData(activity, "call"));
-                //Debug.WriteLine(await sd.getData(activity, "currentAction"));
+                if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
+                {
+                    sd.setData(activity, "activeMode", activity.Text.ToLower());
+                }
+                else if (activity.Text.ToLower().Contains("as"))
+                {
+                    sd.setData(activity, "activeAcc", activity.Text.ToLower());
+                }
+            }
+            else
+            {
+                postReply(activity, "I am ignoring you");
+                HandleSystemMessage(activity);
+            }
 
-            }
-            else if (activity.Text.ToLower().Contains("as"))
-            {                
-                sd.setData(activity, "who", activity.Text.ToLower());
-            }
-            //else
-            //{
-            //    HandleSystemMessage(activity);
-            //}
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
