@@ -24,9 +24,10 @@ namespace callbot
         {
             SurveyDialog sd = new SurveyDialog();
 
-            if (activity.Text.ToLower().Contains("Call") || activity.Text.ToLower().Contains("Record"))
+            if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
             {
                 sd.setData(activity, "currAction", activity.Text.ToLower());
+                postReply(activity, $"{activity.Text.ToLower()} as who?");
                 //Debug.WriteLine(await sd.getData(activity, "call"));
                 //Debug.WriteLine(await sd.getData(activity, "currentAction"));
 

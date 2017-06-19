@@ -28,7 +28,7 @@ namespace callbot
         int silenceTimes = 0;
         //string mode = "Call";
         string mode = "call";
-        bool isSet = false;
+        static bool isSet = false;
         string Actmode = "";
         string whoGuy = "";
 
@@ -74,7 +74,6 @@ namespace callbot
 
             participant = incomingCallEvent.IncomingCall.Participants;
 
-            getUserData(participant);
 
             var id = Guid.NewGuid().ToString();
 
@@ -91,7 +90,7 @@ namespace callbot
                 incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Top of the day to you!")
+                    GetRecordForText("Top of the day to you! What would you like to do today?")
                 };
 
             }
@@ -111,25 +110,28 @@ namespace callbot
             if (isSet == false)
             {
                 //get click input here
-                userData.SetProperty<string>("currAction", "None");
-                userData.SetProperty<string>("who", "None");
-
                 waitForClick(participant);
-                Thread.Sleep(2000);
+                //Thread.Sleep(2500);
+                await setUserData(participant, "currAction", "None");
+                await setUserData(participant, "who", "None");
 
-                do { Actmode = userData.GetProperty<string>("currAction"); } while (Actmode.Equals("None"));
-                await SendRecordMessage("as who?");
-                do { whoGuy = userData.GetProperty<string>("who"); } while (whoGuy.Equals("None"));
-
+                do
+                { Actmode = await getUserData(participant, "currAction"); } while (Actmode.Equals("None"));
+                Debug.WriteLine($"ACTION: {Actmode}");
+                do { whoGuy = await getUserData(participant, "who"); } while (whoGuy.Equals("None"));
+                Debug.WriteLine($"WHO: {whoGuy}");
+                
                 isSet = true;
             }
 
-            if (Actmode.Equals("Record"))
+            if (Actmode.Equals("record"))
             {
-                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                        {
-                            GetRecordForMessage()
-                        };
+                if (recordNum == -1) {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>{ GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                }
+                else {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>{ GetRecordForMessage() };
+                }
             }
             else
             {
@@ -293,13 +295,29 @@ namespace callbot
             return Task.FromResult(true);
         }
 
-        private void getUserData(IEnumerable<Participant> p)
+        private async Task<string> getUserData(IEnumerable<Participant> p, string field)
         {
 
             // create the activity and retrieve
             stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            userData = stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity).Result;
-           
+            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
+
+            return userData.GetProperty<string>(field);
+
+
+        }
+
+        private async Task setUserData(IEnumerable<Participant> p, string field, string value)
+        {
+
+            // create the activity and retrieve
+            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
+
+            userData.SetProperty<string>(field, value);
+            await stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
+
+
         }
 
         private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
@@ -363,7 +381,7 @@ namespace callbot
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-169-78-71.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-169-93-147.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -548,13 +566,13 @@ namespace callbot
 
             CardAction plButton1 = new CardAction()
             {
-                Value = "Who do you want to call?",
+                Value = "Call",
                 Type = ActionTypes.PostBack,
                 Title = "Call"
             };
             CardAction plButton2 = new CardAction()
             {
-                Value = "Who do you want to record as?",
+                Value = "Record",
                 Type = ActionTypes.PostBack,
                 Title = "Record"
             };
