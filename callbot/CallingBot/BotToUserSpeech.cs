@@ -12,6 +12,7 @@ namespace callbot
 {
     internal class BotToUserSpeech: IBotToUser
     {
+        private string tets;
         private Action<string> _callback;
         private readonly IMessageActivity toBot;
         public BotToUserSpeech(IMessageActivity toBot, Action<string> _callback)

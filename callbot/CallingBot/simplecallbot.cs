@@ -144,6 +144,7 @@ namespace callbot
                     {
                         //else identify words
                         string output = await ED.Reply(bingresponse);
+                        string audioKeyword = output + "_" + activeAcc;
 #if RELEASE
                         //use bot framework voice, mode -1
                         Debug.WriteLine($"Bing response: {output}");
@@ -151,14 +152,14 @@ namespace callbot
                             
 #else
                         //microsoft stt, mode 2
-                        //string user = ConfigurationManager.AppSettings["RSId"];
-                        //string private_key = ConfigurationManager.AppSettings["RSPassword"];
-                        //RSAPI rsapi = new RSAPI(user, private_key);
+                        string user = ConfigurationManager.AppSettings["RSId"];
+                        string private_key = ConfigurationManager.AppSettings["RSPassword"];
+                        RSAPI rsapi = new RSAPI(user, private_key);
 
-                        //string path = rsapi.Call(output).Result;
-                        //actionList.Add(PlayAudioFile(path));
+                        string path = rsapi.Call(output).Result;
+                        actionList.Add(PlayAudioFile(path));
 
-                        actionList.Add(GetPromptForText(output, 2));
+                        //actionList.Add(GetPromptForText(output, 2));
 #endif
                         actionList.Add(GetRecordForText(string.Empty, mode: -1));
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
