@@ -46,7 +46,7 @@ namespace callbot.Dialogs
                 }
 
             }
-            while (!succeeded && tries > 0);
+            while (!succeeded);
 
             return r;
         }
@@ -73,7 +73,7 @@ namespace callbot.Dialogs
                     tries--;
                 }
             }
-            while (!succeeded && tries > 0);
+            while (!succeeded);
         }
 
         public async void createHeroCard(ConnectorClient connector, string recipientId, string botId)
