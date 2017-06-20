@@ -25,10 +25,10 @@ namespace callbot
         }
 
         private List<string> response = new List<string>();
-        int silenceTimes = 0;
-        static bool isSet = false;
-        string activeMode = "";
-        string activeAcc = "";
+        private int silenceTimes = 0;
+        private bool isSet;
+        private string activeMode = "";
+        private string activeAcc = "";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
@@ -49,7 +49,6 @@ namespace callbot
 
         public simplecallbot(ICallingBotService callingBotService)
         {
-      
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
@@ -63,7 +62,9 @@ namespace callbot
 
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
+            // reset all flags
             silenceTimes = 0;
+            isSet = false;
             recordNum = -1;
             sttFailed = false;
             bingresponse = "";
@@ -144,7 +145,7 @@ namespace callbot
                     {
                         //else identify words
                         string output = await ED.Reply(bingresponse);
-                        string audioKeyword = output + "_" + activeAcc;
+                        string audioKeyword = "0_" + activeAcc;
 #if RELEASE
                         //use bot framework voice, mode -1
                         Debug.WriteLine($"Bing response: {output}");
@@ -156,7 +157,7 @@ namespace callbot
                         string private_key = ConfigurationManager.AppSettings["RSPassword"];
                         RSAPI rsapi = new RSAPI(user, private_key);
 
-                        string path = rsapi.Call(output).Result;
+                        string path = rsapi.Call(audioKeyword).Result;
                         actionList.Add(PlayAudioFile(path));
 
                         //actionList.Add(GetPromptForText(output, 2));
@@ -372,7 +373,7 @@ namespace callbot
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-169-93-147.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
