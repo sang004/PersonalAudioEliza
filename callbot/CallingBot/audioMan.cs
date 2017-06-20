@@ -68,7 +68,7 @@ namespace callbot
             }
         }
 
-        public void ConvertWavStreamToMp3File( ref MemoryStream ms, string savetofilename)
+        public void ConvertWavStreamToMp3File(ref MemoryStream ms, string savetofilename)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace callbot
             file.Close();
             ms.Close();
 
-            azureFunc(savetofilename);
+            //azureFunc(savetofilename);
         }
 
         public void deleteBlob( string fileName ) {
@@ -116,7 +116,7 @@ namespace callbot
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
         }
 
-        private string azureFunc(string localPath)
+        public string azureFunc(string localPath)
         {
 
             // Let's set up our connection for the account and store the name and key in app.config.           

@@ -73,7 +73,7 @@ namespace callbot
             RSAPI rs = new RSAPI(user, private_key);
             string fileTitle = "ConversationLog_" + appBlob.Name;
 
-            rs.UploadResource(localfile, fileTitle);
+            rs.UploadResource(localfile, fileTitle, ".log");
         }
 
         public string saveAsLocal() {
