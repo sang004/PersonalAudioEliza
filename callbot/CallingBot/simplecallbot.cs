@@ -25,8 +25,8 @@ namespace callbot
 
         private List<string> response = new List<string>();
         int silenceTimes = 0;
-        //string mode = "Call";
-        string mode = "Record";
+        string mode = "Call";
+        //string mode = "Record";
         string userName = "Alice";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
@@ -123,6 +123,7 @@ namespace callbot
 
                     //else identify words
                     string output = await ED.Reply(bingresponse);
+                    int outputIndex = ED.response.IndexOf(output);
 #if RELEASE
                     //use bot framework voice, mode -1
                     Debug.WriteLine($"Bing response: {output}");
