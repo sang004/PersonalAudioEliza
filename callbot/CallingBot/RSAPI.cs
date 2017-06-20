@@ -19,7 +19,7 @@ namespace callbot
 {
     public class RSAPI
     {
-        public const string siteIP = "bitnami-resourcespace-b0e4.cloudapp.net";
+        public const string siteIP = "ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com";
         public string siteAddress = string.Format("http://{0}/api", siteIP);
         public string user;
         public string privateKey;
@@ -28,7 +28,7 @@ namespace callbot
 
         // TEST _ toggle random audio input from RS
         const string mode = "demo";
-
+        
         public RSAPI(string username, string userPrivateKey)
         {
             user = username;

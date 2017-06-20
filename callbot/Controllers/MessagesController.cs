@@ -27,7 +27,7 @@ namespace callbot
             //get current botstate userdata and see if the settings required configuration, else give generic response
             string currMode = await sd.getData(activity, "activeMode");
             string currAcc = await sd.getData(activity, "activeAcc");
-            
+
             if (currMode == "None" || currAcc == "None")
             {
                 if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
@@ -36,14 +36,15 @@ namespace callbot
                 }
                 else if (activity.Text.ToLower().Contains("as"))
                 {
-                    sd.setData(activity, "activeAcc", activity.Text.ToLower());
+                    string acc = (activity.Text.ToLower()).Split(' ')[1];
+                    sd.setData(activity, "activeAcc", acc);
                 }
             }
-            else
-            {
-                postReply(activity, "I am ignoring you");
-                HandleSystemMessage(activity);
-            }
+            //else
+            //{
+            //    postReply(activity, "I am ignoring you");
+            //    HandleSystemMessage(activity);
+            //}
 
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
