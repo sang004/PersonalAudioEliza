@@ -42,6 +42,7 @@ namespace callbot
 
         IEnumerable<Participant> participant = null;
         private int recordNum = -1;
+        private string recordPath = "";
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
         private static audioMan am = new audioMan();
@@ -65,11 +66,14 @@ namespace callbot
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
             silenceTimes = 0;
-            recordNum = 2;
+            recordNum = -1;
             sttFailed = false;
             bingresponse = "";
             participant = incomingCallEvent.IncomingCall.Participants;
             getUser(participant.ElementAt(0));
+            recordPath = string.Format("C:\\Users\\Administrator\\Documents\\audio_records\\{0}", userName);
+            System.IO.Directory.CreateDirectory(recordPath);
+
 
             var id = Guid.NewGuid().ToString();
 
@@ -261,20 +265,21 @@ namespace callbot
         {
             Debug.WriteLine("00000");
             Debug.WriteLine(recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success);
+            var clip_num = 3;
 
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success && recordNum >= 0)
             {
                 var record = await recordOutcomeEvent.RecordedContent;
                 silenceTimes = 0;
-                if (recordNum < 3)//ED.response.Count() + 1)
+                if (recordNum < clip_num)//ED.response.Count() + 1)
                 {
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
-                    string filePath = "C:\\Users\\Administrator\\Documents\\audio_records\\record_" + recordNum + ".wav";
+                    string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, userName);
                     am.ConvertWavStreamToWav(ref ms, filePath);
                     recordNum++;
-                    if (recordNum < 3)
+                    if (recordNum < clip_num)
                     {
                         await SendRecordMessage();
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -285,44 +290,52 @@ namespace callbot
                     // all record done
                     else
                     {
-                        string folderPath = "C:\\Users\\Administrator\\Documents\\audio_records\\";
-                        DirectoryInfo dir = new DirectoryInfo(folderPath);
-
-                        if (dir.GetFiles("*.wav").Length == 3)
+                        recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            foreach (var file in dir.GetFiles("*.wav"))
-                            {
-                                Debug.WriteLine(file.ToString());
-                                string azureUrl = am.azureFunc(folderPath + file.ToString());
-                                Debug.WriteLine("*********" + azureUrl);
-                                if (azureUrl != "")
-                                {
-                                    RS.UploadResource(azureUrl, file.ToString(), ".wav");
-                                }
-                                else
-                                {
-                                    Debug.WriteLine("Upload to azure failed" + file.ToString());
-                                }
-                            }
-                            recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                            {
-                                GetRecordForText("Record completeted, bye!", silenceTimeout: 2),
-                                new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                            };
-                        }
-                        else
-                        {
-                            Debug.WriteLine(string.Format("Number of recorded clips {0} less than {1}", dir.GetFiles("*.wav").Length.ToString(), "3"));
-                            recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                            {
-                                GetRecordForText("Record failed, bye!", silenceTimeout: 2),
-                                new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                            };
-                        }
-                       
-                        recordOutcomeEvent.ResultingWorkflow.Links = null;
-
+                            GetRecordForText("Record completed, uploading recording!")
+                        };
                     }
+                }
+                else if (recordNum == clip_num)
+                {
+                    DirectoryInfo dir = new DirectoryInfo(recordPath);
+    
+                    if (dir.GetFiles("*.wav").Length == clip_num)
+                    {
+                        foreach (var file in dir.GetFiles("*.wav"))
+                        {
+                            Debug.WriteLine(file.ToString());
+                            string azureUrl = am.azureFunc(recordPath + "\\" + file.ToString());
+                            Debug.WriteLine("*********" + azureUrl);
+                            if (azureUrl != "")
+                            {
+                                RS.UploadResource(azureUrl, file.ToString(), ".wav");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("Upload to azure failed" + file.ToString());
+                            }
+                        }
+                        // Delete the folder contains the clips
+                        System.IO.Directory.Delete(recordPath, true);
+                        recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                        {
+                            GetRecordForText("Upload completeted, bye!", silenceTimeout: 2),
+                            new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                        };
+                    }
+                    else
+                    {
+                        System.IO.Directory.Delete(recordPath, true);
+                        Debug.WriteLine(string.Format("Number of recorded clips {0} less than {1}", dir.GetFiles("*.wav").Length.ToString(), "3"));
+                        recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                        {
+                            GetRecordForText("Record failed, bye!", silenceTimeout: 2),
+                            new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                        };
+                    }
+
+                    recordOutcomeEvent.ResultingWorkflow.Links = null;
                 }
             }
             else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated")
