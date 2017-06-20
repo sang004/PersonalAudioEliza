@@ -19,7 +19,7 @@ namespace callbot
 {
     public class RSAPI
     {
-        public const string siteIP = "bitnami-resourcespace-b0e4.cloudapp.net";
+        public const string siteIP = "ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com";
         public string siteAddress = string.Format("http://{0}/api", siteIP);
         public string user;
         public string privateKey;
@@ -79,18 +79,17 @@ namespace callbot
         }
 
         /// <summary>
-        /// Create a resource, upload the file to RS(copy the original file to /filestore), attach it to a resource id,
+        /// Create a resource, upload the file to RS (with url of the file), attach it to a resource id,
         /// add the resource to a collection, update title and date for the uploaded file.
         /// </summary>
-        /// <param name="filePath">Original file path on the server</param>
+        /// <param name="fileUrl">Original file url</param>
         /// <remark>The original file to be uploaded by this function has to be on the same server where ResourceSpace
         /// is installed.</remark>
-        public async void UploadResource(string filePath, string title)
+        public async void UploadResource(string fileUrl, string title, string extension)
         {
             string resourceType = "";
             string collectionId = "";
 
-            string extension = Path.GetExtension(filePath);
             if (extension == ".mp3" || extension == ".wav")
             {
                 resourceType = "4";
@@ -103,10 +102,12 @@ namespace callbot
             }
 
             // get sftp path on resource space server
-            string rsPath = sstpProtocol(filePath);
+            //string rsPath = sstpProtocol(filePath);
 
+            Debug.WriteLine("............extension: " + extension + " resourceType: " + resourceType);
             string resourceId = await CallAPI("create_resource", parameter.CreateResource(resourceType));
-            string uploadSuccess = await CallAPI("upload_file", parameter.UploadFile(resourceId, rsPath));
+            Debug.WriteLine("............resourceId: " + resourceId);
+            string uploadSuccess = await CallAPI("upload_file_by_url", parameter.UploadFile(resourceId, fileUrl));
 
             if (uploadSuccess.Equals("true"))
             {
