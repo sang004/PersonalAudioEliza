@@ -74,9 +74,8 @@ namespace callbot
             bingresponse = "";
 
             participant = incomingCallEvent.IncomingCall.Participants;
-            recordPath = string.Format("C:\\用户\\Joyce\\audio_records\\{0}", userName);
-            System.IO.Directory.CreateDirectory(recordPath);
             var id = Guid.NewGuid().ToString();
+            genResponseCard(participant);
             
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
@@ -98,116 +97,138 @@ namespace callbot
             if (isSet == false)
             {
                 //get click input here
-                genResponseCard(participant);
 
                 // reset all settings at start of call
                 await setUserData(participant, "activeMode", "None");
                 await setUserData(participant, "activeAcc", "None");
 
                 //loop and get user persistant data
-                do { activeMode = await getUserData(participant, "activeMode"); } while (activeMode.Equals("None"));
+                DateTime curTime = DateTime.UtcNow;
+                do { activeMode = await getUserData(participant, "activeMode");} while (activeMode.Equals("None") && DateTime.UtcNow - curTime < new TimeSpan(0, 3, 00) );
                 Debug.WriteLine($"ACTION: {activeMode}");
-                await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
-                do { activeAcc = await getUserData(participant, "activeAcc"); } while (activeAcc.Equals("None"));
-                Debug.WriteLine($"WHO: {activeAcc}");
-                
-                isSet = true;
+                if (!activeMode.Equals("None"))
+                {
+                    await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
+                    curTime = DateTime.UtcNow;
+                    do { activeAcc = await getUserData(participant, "activeAcc"); } while (activeAcc.Equals("None") && DateTime.UtcNow - curTime < new TimeSpan(0, 0, 30));
+                }
+                if (!activeAcc.Equals("None") && !activeMode.Equals("None"))
+                {
+                    isSet = true;
+                }
             }
 
-            if (activeMode.Equals("record"))
+            if (isSet)
             {
-                if (recordNum == -1) {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
-                }
-                else {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForMessage() };
-                }
-            }
-            else
-            {
-                if (recordNum == -1)
+                if (activeMode.Equals("record"))
                 {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
-                    recordNum++;
-                }
-                else
-                {
-                    if(bingresponse != "") { 
-                    silenceTimes = 0;
-                   
-                    // if its bye
-                    if (bingresponse.ToLower().Contains("bye"))
+                    if (recordNum == -1)
                     {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                        {
-                            GetPromptForText("Anybody there? Bye.", 2),
-                            new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                        };
-                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                        silenceTimes = 0;
-
+                        recordPath = string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
+                        Directory.CreateDirectory(recordPath);
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
                     }
                     else
                     {
-                        //else identify words
-                        string output = await ED.Reply(bingresponse);
-                        int outputIndex = ED.response.IndexOf(output);
-                        string audioKeyword = outputIndex + "_" + activeAcc;
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForMessage() };
+                    }
+                }
+                else
+                {
+                    if (recordNum == -1)
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
+                        recordNum++;
+                    }
+                    else
+                    {
+                        if (bingresponse != "")
+                        {
+                            silenceTimes = 0;
+
+                            // if its bye
+                            if (bingresponse.ToLower().Contains("bye"))
+                            {
+                                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                                {
+                                    GetPromptForText("Anybody there? Bye.", 2),
+                                    new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                                };
+                                playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                                silenceTimes = 0;
+
+                            }
+                            else
+                            {
+                                //else identify words
+                                string output = await ED.Reply(bingresponse);
+                                int outputIndex = ED.response.IndexOf(output);
+                                string audioKeyword = outputIndex + "_" + activeAcc;
 #if RELEASE
                         //use bot framework voice, mode -1
                         Debug.WriteLine($"Bing response: {output}");
                         actionList.Add(GetPromptForText(output, -1));
                             
 #else
-                        //microsoft stt, mode 2
-                        string user = ConfigurationManager.AppSettings["RSId"];
-                        string private_key = ConfigurationManager.AppSettings["RSPassword"];
-                        RSAPI rsapi = new RSAPI(user, private_key);
+                                //microsoft stt, mode 2
+                                string user = ConfigurationManager.AppSettings["RSId"];
+                                string private_key = ConfigurationManager.AppSettings["RSPassword"];
+                                RSAPI rsapi = new RSAPI(user, private_key);
 
-                        string path = rsapi.Call(audioKeyword).Result;
-                        actionList.Add(PlayAudioFile(path));
+                                string path = rsapi.Call(audioKeyword).Result;
+                                actionList.Add(PlayAudioFile(path));
 
-                        //actionList.Add(GetPromptForText(output, 2));
+                                //actionList.Add(GetPromptForText(output, 2));
 #endif
-                        actionList.Add(GetRecordForText(string.Empty, mode: -1));
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
-                    }
-                }
-                else
-                {
-                    if (sttFailed)
-                    {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                    {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?")
-                    };
-                        sttFailed = false;
-                        silenceTimes++;
-
-                    }
-                    else if (silenceTimes > 2)
-                    {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                    {
-                        GetPromptForText("Is anybody there? Bye.",2),
-                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                    };
-                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                        silenceTimes = 0;
-                    }
-                    else
-                    {
-
-                        //last resort, listen longer
-                        silenceTimes++;
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                                actionList.Add(GetRecordForText(string.Empty, mode: -1));
+                                playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
+                            }
+                        }
+                        else
                         {
-                            GetRecordForText("I didn't catch that")
-                        };
+                            if (sttFailed)
+                            {
+                                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                                {
+                                    GetRecordForText("I didn't catch that, would you kindly repeat?")
+                                };
+                                sttFailed = false;
+                                silenceTimes++;
 
+                            }
+                            else if (silenceTimes > 2)
+                            {
+                                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                                {
+                                    GetPromptForText("Is anybody there? Bye.",2),
+                                    new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                                };
+                                playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                                silenceTimes = 0;
+                            }
+                            else
+                            {
+
+                                //last resort, listen longer
+                                silenceTimes++;
+                                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                                {
+                                    GetRecordForText("I didn't catch that")
+                                };
+
+                            }
+                        }
                     }
                 }
             }
+            else
+            {
+                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                {
+                    GetPromptForText("Message reply not recieved, Bye.", 2),
+                    //new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                };
+                playPromptOutcomeEvent.ResultingWorkflow.Links = null;
             }
             return Task.CompletedTask;
         }
@@ -221,7 +242,7 @@ namespace callbot
 
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
-            if (activeMode == "Record")
+            if (activeMode == "record")
             {
                 await RecordOnRecordCompleted(recordOutcomeEvent);
             }
@@ -293,7 +314,7 @@ namespace callbot
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
-                    string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, userName);
+                    string filePath = string.Format("{0}{1}_{2}.wav", recordPath, recordNum, activeAcc);
                     am.ConvertWavStreamToWav(ref ms, filePath);
                     recordNum++;
                     if (recordNum < clipNum)
@@ -428,7 +449,7 @@ namespace callbot
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-52-77-210-245.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
