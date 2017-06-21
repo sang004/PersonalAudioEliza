@@ -28,7 +28,7 @@ namespace callbot
 
         // TEST _ toggle random audio input from RS
         const string mode = "demo";
-
+        
         public RSAPI(string username, string userPrivateKey)
         {
             user = username;

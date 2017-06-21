@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
 using Microsoft.Bot.Builder.Dialogs;
 using callbot.Dialogs;
 
@@ -19,18 +18,34 @@ namespace callbot
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
+        /// 
+        
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            
-            
-            if (activity.Type == ActivityTypes.Message)
+            SurveyDialog sd = new SurveyDialog();
+
+            //get current botstate userdata and see if the settings required configuration, else give generic response
+            string currMode = await sd.getData(activity, "activeMode");
+            string currAcc = await sd.getData(activity, "activeAcc");
+
+            if (currMode == "None" || currAcc == "None")
             {
-                await Conversation.SendAsync(activity, () => new LuisDialog());
+                if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
+                {
+                    sd.setData(activity, "activeMode", activity.Text.ToLower());
+                }
+                else if (activity.Text.ToLower().Contains("as"))
+                {
+                    string acc = (activity.Text.ToLower()).Split(' ')[1];
+                    sd.setData(activity, "activeAcc", acc);
+                }
             }
-            else
-            {
-                HandleSystemMessage(activity);
-            }
+            //else
+            //{
+            //    postReply(activity, "I am ignoring you");
+            //    HandleSystemMessage(activity);
+            //}
+
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
@@ -62,6 +77,14 @@ namespace callbot
             }
 
             return null;
+        }
+
+        private async void postReply(Activity activity, string msg)
+        {
+            // creates a reply and post to user
+            var client = new ConnectorClient(new Uri(activity.ServiceUrl));
+            var outMessage = activity.CreateReply(msg);
+            await client.Conversations.SendToConversationAsync(outMessage);
         }
     }
 }
