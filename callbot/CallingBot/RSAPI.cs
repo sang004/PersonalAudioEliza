@@ -19,7 +19,7 @@ namespace callbot
 {
     public class RSAPI
     {
-        public const string siteIP = "ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com";
+        public const string siteIP = "ec2-52-77-210-245.ap-southeast-1.compute.amazonaws.com";
         public string siteAddress = string.Format("http://{0}/api", siteIP);
         public string user;
         public string privateKey;
