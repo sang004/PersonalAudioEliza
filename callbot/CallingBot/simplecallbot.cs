@@ -13,6 +13,7 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.Bot.Connector;
 using System.Linq;
+using System.Threading;
 
 namespace callbot
 {
@@ -24,18 +25,18 @@ namespace callbot
         }
 
         private List<string> response = new List<string>();
+        private string activeAcc = "";
+        private string activeMode = "";
+        private bool isSet;
         int silenceTimes = 0;
-        string mode = "Call";
-        //string mode = "Record";
-        string userName = "Alice";
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
-
-
+        
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
-        MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
-
+        private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
+        private StateClient stateClient;
+        private BotData userData;
 
         bool sttFailed = false;
         string bingresponse = "";
@@ -52,7 +53,6 @@ namespace callbot
 
         public simplecallbot(ICallingBotService callingBotService)
         {
-
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
@@ -66,121 +66,148 @@ namespace callbot
 
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
+            // reset all flags
             silenceTimes = 0;
+            isSet = false;
             recordNum = -1;
             sttFailed = false;
             bingresponse = "";
+
             participant = incomingCallEvent.IncomingCall.Participants;
-            getUser(participant.ElementAt(0));
             recordPath = string.Format("C:\\用户\\Joyce\\audio_records\\{0}", userName);
             System.IO.Directory.CreateDirectory(recordPath);
-
-
             var id = Guid.NewGuid().ToString();
-
-            if (mode.Equals("Record"))
+            
+            incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
-                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                {
-                    new Answer { OperationId = id },
-                    GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2)
-                };
-            }
-            else
-            {
-                incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                {
-                    new Answer { OperationId = id },
-                    GetRecordForText("Top of the day to you!")
-                };
-
-            }
+                new Answer { OperationId = id },
+                GetPromptForText("Top of the day to you! What would you like to do today?",2)
+            };
+            
             return Task.FromResult(true);
         }
+
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             Debug.WriteLine("###################Onplayprompt");
             var actionList = new List<ActionBase>();
 
-            if (bingresponse != "")
+            Debug.WriteLine($"#################CreateRichCard when isSet == {isSet}");
+            // only run once when it first comes into this function
+            if (isSet == false)
             {
-                silenceTimes = 0;
+                //get click input here
+                genResponseCard(participant);
 
-                // if its bye
-                if (bingresponse.ToLower().Contains("bye"))
+                // reset all settings at start of call
+                await setUserData(participant, "activeMode", "None");
+                await setUserData(participant, "activeAcc", "None");
+
+                //loop and get user persistant data
+                do { activeMode = await getUserData(participant, "activeMode"); } while (activeMode.Equals("None"));
+                Debug.WriteLine($"ACTION: {activeMode}");
+                await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
+                do { activeAcc = await getUserData(participant, "activeAcc"); } while (activeAcc.Equals("None"));
+                Debug.WriteLine($"WHO: {activeAcc}");
+                
+                isSet = true;
+            }
+
+            if (activeMode.Equals("record"))
+            {
+                if (recordNum == -1) {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                }
+                else {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForMessage() };
+                }
+            }
+            else
+            {
+                if (recordNum == -1)
                 {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                    {
-                        GetPromptForText("Anybody there? Bye.", 2),
-                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                    };
-                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                    silenceTimes = 0;
-
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
+                    recordNum++;
                 }
                 else
                 {
+                    if(bingresponse != "") { 
+                    silenceTimes = 0;
+                   
+                    // if its bye
+                    if (bingresponse.ToLower().Contains("bye"))
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                        {
+                            GetPromptForText("Anybody there? Bye.", 2),
+                            new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                        };
+                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                        silenceTimes = 0;
 
-                    //else identify words
-                    string output = await ED.Reply(bingresponse);
-                    int outputIndex = ED.response.IndexOf(output);
+                    }
+                    else
+                    {
+                        //else identify words
+                        string output = await ED.Reply(bingresponse);
+                        int outputIndex = ED.response.IndexOf(output);
+                        string audioKeyword = outputIndex + "_" + activeAcc;
 #if RELEASE
-                    //use bot framework voice, mode -1
-                    Debug.WriteLine($"Bing response: {output}");
-                    actionList.Add(GetPromptForText(output, -1));
-
-
+                        //use bot framework voice, mode -1
+                        Debug.WriteLine($"Bing response: {output}");
+                        actionList.Add(GetPromptForText(output, -1));
+                            
 #else
-                    //microsoft stt, mode 2
-                    actionList.Add(GetPromptForText(output, 2));
-#endif
-                    actionList.Add(GetRecordForText(string.Empty, mode: -1));
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
-                }
-            }
+                        //microsoft stt, mode 2
+                        string user = ConfigurationManager.AppSettings["RSId"];
+                        string private_key = ConfigurationManager.AppSettings["RSPassword"];
+                        RSAPI rsapi = new RSAPI(user, private_key);
 
-            else
-            {
-                if (sttFailed)
+                        string path = rsapi.Call(audioKeyword).Result;
+                        actionList.Add(PlayAudioFile(path));
+
+                        //actionList.Add(GetPromptForText(output, 2));
+#endif
+                        actionList.Add(GetRecordForText(string.Empty, mode: -1));
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
+                    }
+                }
+                else
                 {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    if (sttFailed)
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         GetRecordForText("I didn't catch that, would you kindly repeat?")
                     };
-                    sttFailed = false;
-                    silenceTimes++;
+                        sttFailed = false;
+                        silenceTimes++;
 
-                }
-                else if (silenceTimes > 2)
-                {
-                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    }
+                    else if (silenceTimes > 2)
+                    {
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         GetPromptForText("Is anybody there? Bye.",2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
-                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                    silenceTimes = 0;
-                }
-                else
-                {
-                    if (mode.Equals("Record"))
-                    {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                        {
-                            GetRecordForMessage()
-                        };
+                        playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                        silenceTimes = 0;
                     }
                     else
                     {
+
                         //last resort, listen longer
                         silenceTimes++;
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             GetRecordForText("I didn't catch that")
                         };
+
                     }
                 }
+            }
             }
             return Task.CompletedTask;
         }
@@ -194,7 +221,7 @@ namespace callbot
 
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
-            if (mode == "Record")
+            if (activeMode == "Record")
             {
                 await RecordOnRecordCompleted(recordOutcomeEvent);
             }
@@ -202,17 +229,6 @@ namespace callbot
             {
                 await CallOnRecordCompleted(recordOutcomeEvent);
             }
-        }
-
-        private async void getUser(Participant p)
-        {
-
-            // create the activity and retrieve
-            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            BotData userData = await stateClient.BotState.GetUserDataAsync("skype", p.Identity);
-            var sentGreeting = userData.GetProperty<string>("Call");
-            Debug.WriteLine("--------" + sentGreeting);
-
         }
 
         private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
@@ -381,6 +397,24 @@ namespace callbot
             }
         }
 
+        private async Task<string> getUserData(IEnumerable<Participant> p, string field)
+        {
+            // create the activity and retrieve
+            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
+
+            return userData.GetProperty<string>(field);
+            
+        }
+        private async Task setUserData(IEnumerable<Participant> p, string field, string value)
+        {
+            // create the activity and retrieve
+            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
+            userData.SetProperty<string>(field, value);
+            
+            await stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
+        }
         private async Task CallOnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             Debug.WriteLine("00000");
@@ -388,13 +422,13 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-255-210-15.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-179-190-214.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -447,24 +481,32 @@ namespace callbot
         }
 
 
-        private async Task SendRecordMessage()
+        private async Task SendRecordMessage( string msg = "" )
         {
             Debug.WriteLine("#################SEND MESSAGE  Record Number:" + recordNum + "silence time: " + silenceTimes);
+            string finalMsg = "";
 
             string recipientId = participant.ElementAt(0).Identity;
             string botId = participant.ElementAt(1).Identity;
             MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
             ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
 
-            string text = ED.response[recordNum];
-
+            if (! msg.Equals(""))
+            {
+                finalMsg = msg;
+            }
+            else
+            {
+                string text = ED.response[recordNum];
+                finalMsg = "Please record the sentence:\n" + text;
+            }
 
             IMessageActivity newMessage = Activity.CreateMessageActivity();
             newMessage.Type = ActivityTypes.Message;
             newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
             newMessage.Conversation = new ConversationAccount(false, recipientId);
             newMessage.Recipient = new ChannelAccount(recipientId);
-            newMessage.Text = "Please record the sentence:\n" + text;
+            newMessage.Text = finalMsg;
 
             await connector.Conversations.SendToConversationAsync((Activity)newMessage);
         }
@@ -543,6 +585,56 @@ namespace callbot
             if (prompts.Count == 0)
                 return GetSilencePrompt();
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
+        }
+
+        private void genResponseCard(IEnumerable<Participant> participant)
+        {
+
+            string serviceUrl = "https://smba.trafficmanager.net/apis/";
+            MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
+
+            string recipientId = participant.ElementAt(0).Identity;
+            string botId = participant.ElementAt(1).Identity;
+            MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
+            ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
+
+            List<CardAction> cardButtons = new List<CardAction>();
+
+            CardAction plButton1 = new CardAction()
+            {
+                Value = "call",
+                Type = ActionTypes.PostBack,
+                Title = "call"
+            };
+            CardAction plButton2 = new CardAction()
+            {
+                Value = "record",
+                Type = ActionTypes.PostBack,
+                Title = "record"
+            };
+
+            cardButtons.Add(plButton1);
+            cardButtons.Add(plButton2);
+
+            var heroCard = new HeroCard()
+            {
+                Text = "Choose your destiny!",
+                Buttons = cardButtons
+            };
+
+            IMessageActivity newMessage = Activity.CreateMessageActivity();
+            newMessage.Type = ActivityTypes.Message;
+            newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
+            newMessage.Conversation = new ConversationAccount(false, recipientId);
+            newMessage.Recipient = new ChannelAccount(recipientId);
+
+            newMessage.Attachments = new List<Attachment> {
+                heroCard.ToAttachment()
+            };
+
+            var response = connector.Conversations.SendToConversation((Activity)newMessage);
+            
+            //logger.WriteToText("BOT: ", txt);
         }
 
         private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 300)
