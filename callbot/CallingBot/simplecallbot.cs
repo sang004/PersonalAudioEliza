@@ -44,7 +44,8 @@ namespace callbot
         private int recordNum = -1;
         private string recordPath = "";
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
-        private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
+        private static Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
+        private static int clipNum = ED.response.Count;
         private static audioMan am = new audioMan();
         private RSAPI RS = new RSAPI(ConfigurationManager.AppSettings["RSId"], ConfigurationManager.AppSettings["RSPassword"]);
         //RS. ConfigurationManager.AppSettings("RSId", ConfigurationManager.AppSettings("RSPassword");
@@ -71,7 +72,7 @@ namespace callbot
             bingresponse = "";
             participant = incomingCallEvent.IncomingCall.Participants;
             getUser(participant.ElementAt(0));
-            recordPath = string.Format("C:\\Users\\Administrator\\Documents\\audio_records\\{0}", userName);
+            recordPath = string.Format("C:\\用户\\Joyce\\audio_records\\{0}", userName);
             System.IO.Directory.CreateDirectory(recordPath);
 
 
@@ -266,13 +267,12 @@ namespace callbot
         {
             Debug.WriteLine("00000");
             Debug.WriteLine(recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success);
-            var clip_num = 3;
-
+            
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success && recordNum >= 0)
             {
                 var record = await recordOutcomeEvent.RecordedContent;
                 silenceTimes = 0;
-                if (recordNum < clip_num)//ED.response.Count() + 1)
+                if (recordNum < clipNum)//ED.response.Count() + 1)
                 {
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
@@ -280,7 +280,7 @@ namespace callbot
                     string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, userName);
                     am.ConvertWavStreamToWav(ref ms, filePath);
                     recordNum++;
-                    if (recordNum < clip_num)
+                    if (recordNum < clipNum)
                     {
                         await SendRecordMessage();
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -297,11 +297,11 @@ namespace callbot
                         };
                     }
                 }
-                else if (recordNum == clip_num)
+                else if (recordNum == clipNum)
                 {
                     DirectoryInfo dir = new DirectoryInfo(recordPath);
     
-                    if (dir.GetFiles("*.wav").Length == clip_num)
+                    if (dir.GetFiles("*.wav").Length == clipNum)
                     {
                         foreach (var file in dir.GetFiles("*.wav"))
                         {
