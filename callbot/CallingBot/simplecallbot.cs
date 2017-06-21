@@ -176,9 +176,14 @@ namespace callbot
                                 RSAPI rsapi = new RSAPI(user, private_key);
 
                                 string path = rsapi.Call(audioKeyword).Result;
-                                actionList.Add(PlayAudioFile(path));
-
-                                //actionList.Add(GetPromptForText(output, 2));
+                                if (!path.Equals(""))
+                                {
+                                    actionList.Add(PlayAudioFile(path));
+                                }
+                                else
+                                {
+                                    actionList.Add(GetPromptForText(output, 2));
+                                }
 #endif
                                 actionList.Add(GetRecordForText(string.Empty, mode: -1));
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
@@ -314,7 +319,7 @@ namespace callbot
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
-                    string filePath = string.Format("{0}{1}_{2}.wav", recordPath, recordNum, activeAcc);
+                    string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, activeAcc);
                     am.ConvertWavStreamToWav(ref ms, filePath);
                     recordNum++;
                     if (recordNum < clipNum)

@@ -164,8 +164,9 @@ namespace callbot
 
         public async Task<String> searchFile(string searchInput, string resTypes)
         {
+            string jsonResponse = "";
             // use do_search api call to search using string and return json
-            string jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput, resTypes));
+            jsonResponse = await CallAPI("do_search", parameter.DoSearch(searchInput, resTypes));
             if (!string.IsNullOrEmpty(jsonResponse))
             {
                 Debug.WriteLine(jsonResponse);
@@ -185,6 +186,10 @@ namespace callbot
 
             //fetch audio files based on keywords
             string jsonResponse = await searchFile(keyword, "4");
+            if (jsonResponse.Equals(""))
+            {
+                return "";
+            }
             List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
             if (mode == "demo")
