@@ -202,12 +202,11 @@ namespace callbot.Dialogs
 
         static Random rnd = new Random();
 
-        public int RandomResponse(string key)
+        public string RandomResponse(string key)
         {
             List<string> response = psychobabble[key];
             int index = rnd.Next(response.Count);
-            //return response[index];
-            return index;
+            return response[index];
         }
 
         public Task<string> Reply(string text)
@@ -221,6 +220,7 @@ namespace callbot.Dialogs
                 if (Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase))
                 {
                     reply = (RandomResponse(pattern)).ToString();
+                    Debug.WriteLine($"&&&Response ----- {reply}");
                     break;
                 }
             }
