@@ -32,6 +32,10 @@ namespace callbot
 
         private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
         private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
+
+        static string user = ConfigurationManager.AppSettings["RSId"];
+        static string private_key = ConfigurationManager.AppSettings["RSPassword"];
+        RSAPI rsapi = new RSAPI(user, private_key);
         
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
         private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
@@ -64,7 +68,7 @@ namespace callbot
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
         }
 
-        private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
+        private async Task<Task<bool>> OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
             // reset all flags
             silenceTimes = 0;
@@ -75,7 +79,9 @@ namespace callbot
 
             participant = incomingCallEvent.IncomingCall.Participants;
             var id = Guid.NewGuid().ToString();
-            genResponseCard(participant);
+            // reset all settings at start of call
+            await setUserData(participant, "activeMode", "None");
+            await setUserData(participant, "activeAcc", "None");
             
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
@@ -86,6 +92,22 @@ namespace callbot
             return Task.FromResult(true);
         }
 
+        private async Task<string> GetActiveProperty(string property, string propertyName, int timeoutNum)
+        {
+            for (int i = 0; i < timeoutNum; i++)
+            {
+                property = await getUserData(participant, propertyName);
+                if (property.Equals("None"))
+                {
+                    Thread.Sleep(30);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return property;
+        }
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
@@ -97,25 +119,18 @@ namespace callbot
             if (isSet == false)
             {
                 //get click input here
-
-                // reset all settings at start of call
-                await setUserData(participant, "activeMode", "None");
-                await setUserData(participant, "activeAcc", "None");
-
-                //loop and get user persistant data
-                DateTime curTime = DateTime.UtcNow;
-                do { activeMode = await getUserData(participant, "activeMode");} while (activeMode.Equals("None") && DateTime.UtcNow - curTime < new TimeSpan(0, 3, 00) );
-                Debug.WriteLine($"ACTION: {activeMode}");
+                genResponseCard(participant);
+                activeMode = await GetActiveProperty(activeMode, "activeMode", 50);
+                //Debug.WriteLine($"ACTION: {activeMode}");
+                //Debug.WriteLine($"equal: {activeMode.Equals("None")}");
                 if (!activeMode.Equals("None"))
                 {
                     await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
-                    curTime = DateTime.UtcNow;
-                    do { activeAcc = await getUserData(participant, "activeAcc"); } while (activeAcc.Equals("None") && DateTime.UtcNow - curTime < new TimeSpan(0, 0, 30));
+                    activeAcc = await GetActiveProperty(activeAcc, "activeAcc", 50);
                 }
-                if (!activeAcc.Equals("None") && !activeMode.Equals("None"))
-                {
-                    isSet = true;
-                }
+
+                isSet = !activeAcc.Equals("None") && !activeMode.Equals("None");
+                Debug.WriteLine($"isSET: {isSet}");
             }
 
             if (isSet)
@@ -137,11 +152,13 @@ namespace callbot
                 {
                     if (recordNum == -1)
                     {
+                        Debug.WriteLine("^^^^^^Battle prompt");
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
                         recordNum++;
                     }
                     else
                     {
+                        Debug.WriteLine("^^^^^^prompt completed, bing result: ", bingresponse);
                         if (bingresponse != "")
                         {
                             silenceTimes = 0;
@@ -171,10 +188,6 @@ namespace callbot
                             
 #else
                                 //microsoft stt, mode 2
-                                string user = ConfigurationManager.AppSettings["RSId"];
-                                string private_key = ConfigurationManager.AppSettings["RSPassword"];
-                                RSAPI rsapi = new RSAPI(user, private_key);
-
                                 string path = rsapi.Call(audioKeyword).Result;
                                 if (!path.Equals(""))
                                 {
@@ -188,11 +201,13 @@ namespace callbot
                                 actionList.Add(GetRecordForText(string.Empty, mode: -1));
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                             }
+                            bingresponse = "";
                         }
                         else
                         {
                             if (sttFailed)
                             {
+                                Debug.WriteLine("^^^^^^^^^^^Bing not captured");
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     GetRecordForText("I didn't catch that, would you kindly repeat?")
@@ -213,12 +228,14 @@ namespace callbot
                             }
                             else
                             {
-
+                                Debug.WriteLine("^^^^^^^^^last resort");
                                 //last resort, listen longer
                                 silenceTimes++;
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    GetRecordForText("I didn't catch that")
+                                    //GetRecordForText("I didn't catch that")
+                                    GetSilencePrompt()
+
                                 };
 
                             }
@@ -231,7 +248,7 @@ namespace callbot
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     GetPromptForText("Message reply not recieved, Bye.", 2),
-                    //new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                    new Hangup() { OperationId = Guid.NewGuid().ToString() }
                 };
                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
             }
@@ -448,13 +465,13 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-52-77-210-245.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-169-103-151.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -468,6 +485,8 @@ namespace callbot
                 var record = await recordOutcomeEvent.RecordedContent;
 
 #endif
+
+                Debug.WriteLine("^^^^^^^^^Record succeed, bing process");
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse = b);
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
@@ -496,6 +515,7 @@ namespace callbot
                 }
                 else
                 {
+                    Debug.WriteLine("^^^^^^^^^^^^RECORD FAILED");
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
