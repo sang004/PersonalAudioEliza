@@ -14,6 +14,7 @@ using System.Diagnostics;
 using Microsoft.Bot.Connector;
 using System.Linq;
 using System.Threading;
+using callbot.utility;
 
 namespace callbot
 {
@@ -39,8 +40,6 @@ namespace callbot
         
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
         private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
-        private StateClient stateClient;
-        private BotData userData;
 
         bool sttFailed = false;
         string bingresponse = "";
@@ -68,7 +67,7 @@ namespace callbot
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
         }
 
-        private async Task<Task<bool>> OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
+        private Task<bool> OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
             // reset all flags
             silenceTimes = 0;
@@ -79,25 +78,28 @@ namespace callbot
 
             participant = incomingCallEvent.IncomingCall.Participants;
             var id = Guid.NewGuid().ToString();
-            // reset all settings at start of call
-            await setUserData(participant, "activeMode", "None");
-            await setUserData(participant, "activeAcc", "None");
-            
+
+            //remove the persistent variables first
+            int retries = 0;
+            BotStateEdit.removeUserData(participant, "activeMode", ref retries);
+            BotStateEdit.removeUserData(participant, "activeAcc", ref retries);
+
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
                 new Answer { OperationId = id },
                 GetPromptForText("Top of the day to you! What would you like to do today?",2)
             };
-            
+
             return Task.FromResult(true);
         }
 
-        private async Task<string> GetActiveProperty(string property, string propertyName, int timeoutNum)
+        private string GetActiveProperty(string property, string propertyName, int timeoutNum)
         {
+            int retries = 0;
             for (int i = 0; i < timeoutNum; i++)
             {
-                property = await getUserData(participant, propertyName);
-                if (property.Equals("None"))
+                property = BotStateEdit.getUserData(participant, propertyName, ref retries);
+                if (property == null)
                 {
                     Thread.Sleep(30);
                 }
@@ -120,16 +122,18 @@ namespace callbot
             {
                 //get click input here
                 genResponseCard(participant);
-                activeMode = await GetActiveProperty(activeMode, "activeMode", 50);
-                //Debug.WriteLine($"ACTION: {activeMode}");
+                activeMode = GetActiveProperty(activeMode, "activeMode", 50);
+                Debug.WriteLine($"ACTION: {activeMode}");
                 //Debug.WriteLine($"equal: {activeMode.Equals("None")}");
-                if (!activeMode.Equals("None"))
+                if (activeMode != null)
                 {
                     await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
-                    activeAcc = await GetActiveProperty(activeAcc, "activeAcc", 50);
+                    activeAcc = GetActiveProperty(activeAcc, "activeAcc", 50);
+                    Debug.WriteLine($"WHO: {activeAcc}");
+
                 }
 
-                isSet = !activeAcc.Equals("None") && !activeMode.Equals("None");
+                isSet = activeAcc != null && activeMode != null;
                 Debug.WriteLine($"isSET: {isSet}");
             }
 
@@ -139,8 +143,10 @@ namespace callbot
                 {
                     if (recordNum == -1)
                     {
-                        recordPath = string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
+                        // create a directory in the appdata temp folder to temporary store audio on local
+                        recordPath = Path.GetTempPath() + activeAcc.ToString(); //string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
                         Directory.CreateDirectory(recordPath);
+
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
                     }
                     else
@@ -439,25 +445,7 @@ namespace callbot
                 }
             }
         }
-
-        private async Task<string> getUserData(IEnumerable<Participant> p, string field)
-        {
-            // create the activity and retrieve
-            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
-
-            return userData.GetProperty<string>(field);
-            
-        }
-        private async Task setUserData(IEnumerable<Participant> p, string field, string value)
-        {
-            // create the activity and retrieve
-            stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            userData = await stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity);
-            userData.SetProperty<string>(field, value);
-            
-            await stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
-        }
+              
         private async Task CallOnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             Debug.WriteLine("00000");
@@ -465,13 +453,10 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
-                string user = ConfigurationManager.AppSettings["RSId"];
-                string private_key = ConfigurationManager.AppSettings["RSPassword"];
-                
-                string replyAudioPath = "http://ec2-54-169-103-151.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-169-253-0.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -537,6 +522,7 @@ namespace callbot
             MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
             ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
 
+            // if param msg has words, just reply using msg. Else use Eliza to determine response
             if (! msg.Equals(""))
             {
                 finalMsg = msg;
@@ -557,7 +543,7 @@ namespace callbot
             await connector.Conversations.SendToConversationAsync((Activity)newMessage);
         }
 
-        // TEST playback
+        // audio playback with url
         private static PlayPrompt PlayAudioFile(string audioPath)
         {
 
@@ -573,25 +559,7 @@ namespace callbot
 
             System.Uri uri;
             //logger.WriteToText("BOT: ", text);
-            if (mode == 1)
-            {
-                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else if (mode == 0)
-            {
-                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/5_1b312f7bcb5fbc6/85_0edca2f3cccad42.wav");
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else if (mode == -2)
+            if (mode == -2)
             {
                 // Configure the audio output. 
                 MemoryStream ms = new MemoryStream();
