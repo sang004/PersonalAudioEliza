@@ -215,8 +215,8 @@ namespace callbot.Dialogs
             Debug.WriteLine($"Text ----- {text}");
             foreach (string pattern in target)
             {
-                Debug.WriteLine($"Pattern ----- {pattern}");
-                Debug.WriteLine($"Check ----- {Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase)}");
+                //Debug.WriteLine($"Pattern ----- {pattern}");
+                //Debug.WriteLine($"Check ----- {Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase)}");
                 if (Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase))
                 {
                     reply = (RandomResponse(pattern)).ToString();

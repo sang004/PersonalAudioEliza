@@ -171,6 +171,7 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="CallingBot\audioMan.cs" />
     <Compile Include="CallingBot\BingSpeech.cs" />
+    <Compile Include="Utility\BotStateEdit.cs" />
     <Compile Include="CallingBot\BotToUserSpeech.cs" />
     <Compile Include="CallingBot\ConversationTranscibe.cs" />
     <Compile Include="CallingBot\RSAPI.cs" />
@@ -178,7 +179,6 @@
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Dialogs\ElizaDialog.cs" />
     <Compile Include="Dialogs\LuisDialog.cs" />
-    <Compile Include="Dialogs\SurveyDialog.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

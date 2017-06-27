@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 
 using System.Security.Cryptography;
 using System.Net.Http;
@@ -9,18 +8,16 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.IO;
 
 using WinSCP;
 using Newtonsoft.Json;
+using System.Configuration;
 
 namespace callbot
 {
     public class RSAPI
     {
-        public const string siteIP = "ec2-52-77-210-245.ap-southeast-1.compute.amazonaws.com";
-        public string siteAddress = string.Format("http://{0}/api", siteIP);
+        public string siteIP { get; } = ConfigurationManager.AppSettings["RSBaseURI"];
         public string user;
         public string privateKey;
         public string queryUrl;
@@ -63,7 +60,7 @@ namespace callbot
             FormQuery(functionName, parameters);
 
             HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(siteAddress);
+            client.BaseAddress = new Uri(string.Format("http://{0}/api", siteIP));
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             HttpResponseMessage response = client.GetAsync(queryUrl).Result;
@@ -183,14 +180,19 @@ namespace callbot
             string extension = "";
             string resourceID = "";
             int eleIdx = 0;
+            List<searchResult> jsonList;
 
             //fetch audio files based on keywords
             string jsonResponse = await searchFile(keyword, "4");
-            if (jsonResponse.Equals(""))
+            try
             {
+                jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
+            }
+            catch (JsonSerializationException)
+            {
+                Debug.WriteLine("======Could not find audio in RS");
                 return "";
             }
-            List<searchResult> jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
 
             if (mode == "demo")
             {

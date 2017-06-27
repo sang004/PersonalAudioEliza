@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Microsoft.Bot.Builder.Dialogs;
-using callbot.Dialogs;
+using callbot.utility;
+using System.Diagnostics;
 
 namespace callbot
 {
@@ -22,29 +20,30 @@ namespace callbot
         
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            SurveyDialog sd = new SurveyDialog();
-
+            int retries = 0;
             //get current botstate userdata and see if the settings required configuration, else give generic response
-            string currMode = await sd.getData(activity, "activeMode");
-            string currAcc = await sd.getData(activity, "activeAcc");
+            string currMode = BotStateEdit.getUserData(activity, "activeMode", ref retries);
+            string currAcc = BotStateEdit.getUserData(activity, "activeAcc", ref retries);
 
-            if (currMode == "None" || currAcc == "None")
+            if (currMode == null || currAcc == null)
             {
                 if (activity.Text.ToLower().Contains("call") || activity.Text.ToLower().Contains("record"))
                 {
-                    sd.setData(activity, "activeMode", activity.Text.ToLower());
+                    BotStateEdit.setUserData(activity, "activeMode", activity.Text.ToLower(), ref retries);
                 }
                 else if (activity.Text.ToLower().Contains("as"))
                 {
                     string acc = (activity.Text.ToLower()).Split(' ')[1];
-                    sd.setData(activity, "activeAcc", acc);
+                    BotStateEdit.setUserData(activity, "activeAcc", acc, ref retries);
                 }
             }
-            //else
-            //{
-            //    postReply(activity, "I am ignoring you");
-            //    HandleSystemMessage(activity);
-            //}
+            else
+            {
+                //postReply(activity, "I am ignoring you");
+                //HandleSystemMessage(activity);
+                Debug.WriteLine($"===============Ignoring '{activity.Text}'");
+
+            }
 
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
