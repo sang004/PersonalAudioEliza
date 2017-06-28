@@ -291,8 +291,8 @@ namespace callbot
             string fetchrows = "";
             string sort = "desc";
 
-            parameters = String.Format("param1={0}&param2={1}&param3={2}",
-                         searchStr, resTypes, orderby);
+            parameters = String.Format("param1={0}&param2={1}&param6={2}",
+                         searchStr, resTypes, sort);
 
             return parameters;
         }
