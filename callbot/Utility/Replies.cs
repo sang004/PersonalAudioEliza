@@ -4,14 +4,9 @@ using Microsoft.Bot.Connector;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.IO;
 using System.Linq;
-using System.Web;
 
-using SSS = System.Speech.Synthesis;
-
-
-namespace callbot.Utility
+namespace callbot.utility
 {
     public static class Replies
     {
@@ -126,7 +121,7 @@ namespace callbot.Utility
         }
 
         // create a silent moment in ms
-        public static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 300)
+        public static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 500)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
@@ -168,6 +163,7 @@ namespace callbot.Utility
                 prompt = null;
             else
                 prompt = Replies.GetPromptForText(promptText, mode);
+
             var id = Guid.NewGuid().ToString();
 
             return SetRecord(id, prompt, playbeep, silenceTimeout);

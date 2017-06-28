@@ -20,7 +20,7 @@ namespace callbot.Dialogs
             @"Can you(.*)", @"Can I(.*)", @"You are(.*)", @"I don'?t(.*)", @"I feel(.*)", @"I have(.*)", @"I would(.*)", @"Is there(.*)",
             @"My(.*)", @"You(.*)", @"Why(.*)", @"I want(.*)", @"(.*)mother(.*)", @"(.*)father(.*)", @"(.*)child(.*)", @"(.*)"});
 
-        public List<string> response = new List<string>(new string[33] {
+        public List<string> response = new List<string>(new string[35] {
                                                                       "Why do you need that?",
 
                                                                       "Do you really think I don't?",
@@ -86,6 +86,10 @@ namespace callbot.Dialogs
                                                                        "Did you have close friends as a child?",
 
                                                                        "Please tell me more.",
+
+                                                                       "I didn't catch, can you repeat yourself?",
+
+                                                                       "I think the call is breaking up... Bye",
             });
 
         public ElizaDialog()

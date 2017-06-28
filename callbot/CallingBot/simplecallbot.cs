@@ -8,14 +8,12 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Configuration;
 
-using SSS = System.Speech.Synthesis;
 using System.IO;
 using System.Diagnostics;
 using Microsoft.Bot.Connector;
 using System.Linq;
 using System.Threading;
 using callbot.utility;
-using callbot.Utility;
 
 namespace callbot
 {
@@ -161,7 +159,7 @@ namespace callbot
                     if (recordNum == -1)
                     {
                         Debug.WriteLine("^^^^^^Battle prompt");
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Lets start a verbal battle!") };
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Lets start a verbal battle!", playbeep:true) };
                         recordNum++;
                     }
                     else
@@ -176,7 +174,8 @@ namespace callbot
                             {
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    Replies.GetPromptForText("Anybody there? Bye.", 2),
+                                    //Replies.GetPromptForText("Anybody there? Bye.", 2),
+                                    getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -186,26 +185,28 @@ namespace callbot
                             else
                             {
                                 //else identify words
-                                string output = await ED.Reply(bingresponse);
-                                int outputIndex = ED.response.IndexOf(output);
-                                string audioKeyword = outputIndex + "_" + activeAcc;
-#if RELEASE
-                        //use bot framework voice, mode -1
-                        Debug.WriteLine($"Bing response: {output}");
-                        actionList.Add(GetPromptForText(output, -1));
-                            
-#else
-                                //microsoft stt, mode 2
-                                string path = rsapi.Call(audioKeyword).Result;
-                                if (!path.Equals(""))
-                                {
-                                    actionList.Add(Replies.PlayAudioFile(path));
-                                }
-                                else
-                                {
-                                    actionList.Add(Replies.GetPromptForText(output, 2));
-                                }
-#endif
+                                //                                string output = await ED.Reply(bingresponse);
+                                //                                int outputIndex = ED.response.IndexOf(output);
+                                //                                string audioKeyword = outputIndex + "_" + activeAcc;
+                                ////#if DEBUG
+                                ////                                //use bot framework voice, mode -1
+                                ////                                Debug.WriteLine($"Bing response: {output}");
+                                ////                                actionList.Add(Replies.GetPromptForText(output, -1));
+
+                                ////#else
+                                //                                //microsoft stt, mode 2
+                                //                                string path = rsapi.Call(audioKeyword).Result;
+                                //                                if (!path.Equals(""))
+                                //                                {
+                                //                                    actionList.Add(Replies.PlayAudioFile(path));
+                                //                                }
+                                //                                else
+                                //                                {
+                                //                                    actionList.Add(Replies.GetPromptForText(output, 2));
+                                //                                }
+                                ////#endif
+                                actionList.Add(await getVoiceAsync(bingresponse));
+
                                 actionList.Add(Replies.GetRecordForText(string.Empty, mode: -1));
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                             }
@@ -218,17 +219,20 @@ namespace callbot
                                 Debug.WriteLine("^^^^^^^^^^^Bing not captured");
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    Replies.GetRecordForText("I didn't catch that, would you kindly repeat?")
+                                    //Replies.GetRecordForText("I didn't catch that, would you kindly repeat?")
+                                    getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                                    Replies.GetRecordForText(string.Empty, mode: -1)
                                 };
                                 sttFailed = false;
                                 silenceTimes++;
 
                             }
-                            else if (silenceTimes > 2)
+                            else if (silenceTimes > 5)
                             {
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    Replies.GetPromptForText("Is anybody there? Bye.",2),
+                                    //Replies.GetPromptForText("Is anybody there? Bye.",2),
+                                    getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -390,14 +394,17 @@ namespace callbot
                         silenceTimes++;
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            Replies.GetRecordForText("I didn't catch that, would you kindly repeat?", playbeep: true, silenceTimeout: 2)
+                            getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                            Replies.GetRecordForText(string.Empty, mode: -1)
+                            //Replies.GetRecordForText("I didn't catch that, would you kindly repeat?", playbeep: true, silenceTimeout: 2)
                         };
                     }
                     else
                     {
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            Replies.GetRecordForText("I didn't catch that, record terminated!", silenceTimeout: 2),
+                            //Replies.GetRecordForText("I didn't catch that, record terminated!", silenceTimeout: 2),
+                            getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
                             new Hangup() { OperationId = Guid.NewGuid().ToString() }
                         };
                         recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -414,7 +421,7 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if DEBUG
+#if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string replyAudioPath = "http://ec2-54-169-86-118.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
@@ -466,7 +473,9 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        Replies.GetRecordForText("I didn't catch, would you kindly repeat?")
+                        //Replies.GetRecordForText("I didn't catch, would you kindly repeat?")
+                        getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                        Replies.GetRecordForText(string.Empty, mode: -1)
                     };
                 }
             }
@@ -504,6 +513,34 @@ namespace callbot
 
             await connector.Conversations.SendToConversationAsync((Activity)newMessage);
         }
-        
+
+        private async Task<PlayPrompt> getVoiceAsync(string keyword, int ElizaIdx=-1)
+        {
+            // create a reflection of user speech
+            string output = "";
+
+            if (ElizaIdx == -1)
+            {
+                output = await ED.Reply(keyword);
+                ElizaIdx = ED.response.IndexOf(output);
+            }
+            else {
+                output = keyword;
+            }
+
+            string audioKeyword = ElizaIdx + "_" + activeAcc;
+
+            //microsoft stt, mode 2
+            string path = rsapi.Call(audioKeyword).Result;
+            if (!path.Equals(""))
+            {
+                return Replies.PlayAudioFile(path);
+            }
+            else
+            {
+                return Replies.GetPromptForText(output, 2);
+            }
+        }
+
     }
 }
