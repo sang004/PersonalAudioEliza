@@ -41,6 +41,12 @@ namespace callbot
             {
                 //postReply(activity, "I am ignoring you");
                 //HandleSystemMessage(activity);
+                var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+                Activity reply = activity.CreateReply("I have my answers, I am ignoring you");
+                reply.Speak = "I have my answers, I am ignoring you";
+                reply.InputHint = InputHints.IgnoringInput;
+                await connector.Conversations.ReplyToActivityAsync(reply);
+
                 Debug.WriteLine($"===============Ignoring '{activity.Text}'");
 
             }

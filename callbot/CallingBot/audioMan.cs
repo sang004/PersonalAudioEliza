@@ -25,6 +25,80 @@ namespace callbot
         public audioMan() {
             
         }
+        
+        public void ConvertWavStreamToWav(ref MemoryStream ms, string savetofilename)
+        {
+            FileStream file = new FileStream(savetofilename, FileMode.Create, FileAccess.Write);
+            ms.WriteTo(file);
+            file.Close();
+            ms.Close();
+
+            //azureFunc(savetofilename);
+        }
+
+        public void deleteBlob( string fileName ) {
+            // Let's set up our connection for the account and store the name and key in app.config.           
+            string accName = ConfigurationManager.AppSettings["AzureStoreId"];
+            string accKey = ConfigurationManager.AppSettings["AzureStorePassword"];
+
+            // Implement the accout, set true for https for SSL.
+            StorageCredentials creds = new StorageCredentials(accName, accKey);
+            CloudStorageAccount strAcc = new CloudStorageAccount(creds, true);
+            CloudBlobClient blobClient = strAcc.CreateCloudBlobClient();
+
+            //Setup our container we are going to use and create it.
+            CloudBlobContainer container = blobClient.GetContainerReference("logs");
+            // Retrieve reference to a blob named "myblob.txt".
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+        }
+
+        public string azureFunc(string localPath)
+        {
+
+            // Let's set up our connection for the account and store the name and key in app.config.           
+            string accName = ConfigurationManager.AppSettings["AzureStoreId"];
+            string accKey = ConfigurationManager.AppSettings["AzureStorePassword"];
+
+            // Implement the accout, set true for https for SSL.
+            StorageCredentials creds = new StorageCredentials(accName, accKey);
+            CloudStorageAccount strAcc = new CloudStorageAccount(creds, true);
+            CloudBlobClient blobClient = strAcc.CreateCloudBlobClient();
+
+            //Setup our container we are going to use and create it.
+            CloudBlobContainer container = blobClient.GetContainerReference("logs");
+
+            container.CreateIfNotExistsAsync();
+
+            // Build file name
+            // This creates a reference to the append blob we are going to use.
+        
+            // use GUID to generate a unique file name every time
+            fileName = string.Format(@"{0}.txt", Guid.NewGuid()); 
+            appBlob = container.GetAppendBlobReference(fileName);
+
+            // Now we are going to check if todays file exists and if it doesn't we create it.
+            if (!appBlob.Exists())
+            {
+                appBlob.CreateOrReplace();
+            }
+
+            // Save blob contents to a file.
+            try
+            {
+                appBlob.UploadFromFile(localPath);
+                Console.WriteLine(appBlob.Uri.AbsoluteUri);
+                azureUrl = appBlob.Uri.AbsoluteUri;
+                return azureUrl;
+            }
+            catch {
+                Console.WriteLine("======Failed to save on Azure");
+                return "";
+            }
+
+        }
+
+# region WIP
+#if DEBUG
 
         public static TimeSpan GetWavFileDuration(string fileName)
         {
@@ -32,7 +106,8 @@ namespace callbot
             return wf.TotalTime;
         }
 
-        public void callCombine(List<string> audioPaths) {
+        public void callCombine(List<string> audioPaths)
+        {
             string tempPath = Path.GetTempPath();
 
             output = $"{tempPath}output.mp3";
@@ -88,78 +163,6 @@ namespace callbot
                 Debug.WriteLine("GG");
 
             }
-        }
-
-        public void ConvertWavStreamToWav(ref MemoryStream ms, string savetofilename)
-        {
-            FileStream file = new FileStream(savetofilename, FileMode.Create, FileAccess.Write);
-            ms.WriteTo(file);
-            file.Close();
-            ms.Close();
-
-            //azureFunc(savetofilename);
-        }
-
-        public void deleteBlob( string fileName ) {
-            // Let's set up our connection for the account and store the name and key in app.config.           
-            string accName = ConfigurationManager.AppSettings["AzureStoreId"];
-            string accKey = ConfigurationManager.AppSettings["AzureStorePassword"];
-
-            // Implement the accout, set true for https for SSL.
-            StorageCredentials creds = new StorageCredentials(accName, accKey);
-            CloudStorageAccount strAcc = new CloudStorageAccount(creds, true);
-            CloudBlobClient blobClient = strAcc.CreateCloudBlobClient();
-
-            //Setup our container we are going to use and create it.
-            CloudBlobContainer container = blobClient.GetContainerReference("logs");
-            // Retrieve reference to a blob named "myblob.txt".
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-        }
-
-        public string azureFunc(string localPath)
-        {
-
-            // Let's set up our connection for the account and store the name and key in app.config.           
-            string accName = ConfigurationManager.AppSettings["AzureStoreId"];
-            string accKey = ConfigurationManager.AppSettings["AzureStorePassword"];
-
-            // Implement the accout, set true for https for SSL.
-            StorageCredentials creds = new StorageCredentials(accName, accKey);
-            CloudStorageAccount strAcc = new CloudStorageAccount(creds, true);
-            CloudBlobClient blobClient = strAcc.CreateCloudBlobClient();
-
-            //Setup our container we are going to use and create it.
-            CloudBlobContainer container = blobClient.GetContainerReference("logs");
-
-            container.CreateIfNotExistsAsync();
-
-            // Build my typical log file name.
-            DateTime date = DateTime.Today;
-            DateTime dateLogEntry = DateTime.Now;
-            // This creates a reference to the append blob we are going to use.
-            double result = DateTime.Now.Subtract(DateTime.MinValue).TotalSeconds;
-            fileName = $"{result}.wav";
-            appBlob = container.GetAppendBlobReference(fileName);
-
-            // Now we are going to check if todays file exists and if it doesn't we create it.
-            if (!appBlob.Exists())
-            {
-                appBlob.CreateOrReplace();
-            }
-
-            // Save blob contents to a file.
-            try
-            {
-                appBlob.UploadFromFile(localPath);
-                Console.WriteLine(appBlob.Uri.AbsoluteUri);
-                azureUrl = appBlob.Uri.AbsoluteUri;
-                return azureUrl;
-            }
-            catch {
-                Console.WriteLine("GG");
-                return "";
-            }
-
         }
 
         private void ConcatenateAudio_wav(IEnumerable<string> sourceFiles, string outputPath)
@@ -268,8 +271,9 @@ namespace callbot
             }
 
         }
-        
 
+#endif
+#endregion
 
     }
 }
