@@ -424,7 +424,7 @@ namespace callbot
 #if RELEASE
                 //TEST AUDIO START
                 ///Retrieve random audio            
-                string replyAudioPath = "http://ec2-54-169-86-118.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-52-221-208-165.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);

@@ -24,7 +24,7 @@ namespace callbot
         public Parameters parameter = new Parameters();
 
         // TEST _ toggle random audio input from RS
-        const string mode = "demo";
+        const string mode = "live";
         
         public RSAPI(string username, string userPrivateKey)
         {
@@ -200,6 +200,7 @@ namespace callbot
                 eleIdx = rnd.Next(jsonList.Count);
 
             }
+ 
 
             extension = jsonList[eleIdx].file_extension;
             resourceID = jsonList[eleIdx].@ref;
@@ -286,13 +287,13 @@ namespace callbot
 
 
         public string DoSearch( string searchStr, string resTypes ) {
-            string orderby = "title";
+            string orderby = "relevance";
             string archive = "0";
             string fetchrows = "";
             string sort = "desc";
 
-            parameters = String.Format("param1={0}&param2={1}&param6={2}",
-                         searchStr, resTypes, sort);
+            parameters = String.Format("param1={0}&param2={1}&param3={2}&param6={3}",
+                         searchStr, resTypes, orderby, sort);
 
             return parameters;
         }
