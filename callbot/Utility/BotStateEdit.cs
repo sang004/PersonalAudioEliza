@@ -15,6 +15,7 @@ namespace callbot.utility
 
         private static int limit = 10;
 
+        // gets user variables stored in BotState
         public static string getUserData(IEnumerable<Participant> p, string field, ref int count)
         {
 
@@ -28,6 +29,7 @@ namespace callbot.utility
                 output = userData.GetProperty<string>(field);
 
             }
+            // if condition 412 appears, it will retry recursively until number of tries is more than limit
             catch (HttpOperationException)
             {
                 if (count < limit)
@@ -44,6 +46,7 @@ namespace callbot.utility
             return output;
         }
 
+        // overloaded getUserData function that uses activity from IMessage
         public static string getUserData(Activity activity, string field, ref int count)
         {
 
@@ -74,7 +77,7 @@ namespace callbot.utility
             return output;
         }
 
-
+        // sets user variables stored in BotState
         public static string setUserData(IEnumerable<Participant> p, string field, string value, ref int count)
         {
             // create the and retrieve
@@ -99,30 +102,7 @@ namespace callbot.utility
             return "1";
         }
 
-        public static string removeUserData(IEnumerable<Participant> p, string field, ref int count)
-        {
-            // create the and retrieve
-            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
-            BotData userData = stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity).Result;
-
-            try
-            {
-                userData.RemoveProperty(field);
-                stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
-            }
-            catch (HttpOperationException)
-            {
-                if (count < limit)
-                {
-                    count++;
-                    Thread.Sleep(300);
-                    return removeUserData(p, field, ref count);
-
-                }
-            }
-            return "1";
-        }
-
+        // overloaded setUserData function that uses activity from IMessage
         public static string setUserData(Activity activity, string field, string value, ref int count)
         {
             // create the and retrieve
@@ -141,6 +121,31 @@ namespace callbot.utility
                     count++;
                     Thread.Sleep(300);
                     return setUserData(activity, field, value, ref count);
+
+                }
+            }
+            return "1";
+        }
+
+        // removes variable in user data stored in BotState
+        public static string removeUserData(IEnumerable<Participant> p, string field, ref int count)
+        {
+            // create the and retrieve
+            StateClient stateClient = new StateClient(new MicrosoftAppCredentials(microsoftAppId, microsoftAppPassword));
+            BotData userData = stateClient.BotState.GetUserDataAsync("skype", p.ElementAt(0).Identity).Result;
+
+            try
+            {
+                userData.RemoveProperty(field);
+                stateClient.BotState.SetUserDataAsync("skype", p.ElementAt(0).Identity, userData);
+            }
+            catch (HttpOperationException)
+            {
+                if (count < limit)
+                {
+                    count++;
+                    Thread.Sleep(300);
+                    return removeUserData(p, field, ref count);
 
                 }
             }

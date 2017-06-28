@@ -15,6 +15,7 @@ using Microsoft.Bot.Connector;
 using System.Linq;
 using System.Threading;
 using callbot.utility;
+using callbot.Utility;
 
 namespace callbot
 {
@@ -87,7 +88,7 @@ namespace callbot
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
                 new Answer { OperationId = id },
-                GetPromptForText("Top of the day to you! What would you like to do today?",2)
+                Replies.GetPromptForText("Top of the day to you! What would you like to do today?",2)
             };
 
             return Task.FromResult(true);
@@ -113,6 +114,7 @@ namespace callbot
 
         private async Task<Task> OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
+            
             Debug.WriteLine("###################Onplayprompt");
             var actionList = new List<ActionBase>();
 
@@ -121,7 +123,7 @@ namespace callbot
             if (isSet == false)
             {
                 //get click input here
-                genResponseCard(participant);
+                Replies.GenResponseCard(participant);
                 activeMode = GetActiveProperty(activeMode, "activeMode", 50);
                 Debug.WriteLine($"ACTION: {activeMode}");
                 //Debug.WriteLine($"equal: {activeMode.Equals("None")}");
@@ -147,11 +149,11 @@ namespace callbot
                         recordPath = Path.GetTempPath() + activeAcc.ToString(); //string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
                         Directory.CreateDirectory(recordPath);
 
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
                     }
                     else
                     {
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForMessage() };
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForMessage() };
                     }
                 }
                 else
@@ -159,7 +161,7 @@ namespace callbot
                     if (recordNum == -1)
                     {
                         Debug.WriteLine("^^^^^^Battle prompt");
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { GetRecordForText("Lets start a verbal battle!") };
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Lets start a verbal battle!") };
                         recordNum++;
                     }
                     else
@@ -174,7 +176,7 @@ namespace callbot
                             {
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    GetPromptForText("Anybody there? Bye.", 2),
+                                    Replies.GetPromptForText("Anybody there? Bye.", 2),
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -197,14 +199,14 @@ namespace callbot
                                 string path = rsapi.Call(audioKeyword).Result;
                                 if (!path.Equals(""))
                                 {
-                                    actionList.Add(PlayAudioFile(path));
+                                    actionList.Add(Replies.PlayAudioFile(path));
                                 }
                                 else
                                 {
-                                    actionList.Add(GetPromptForText(output, 2));
+                                    actionList.Add(Replies.GetPromptForText(output, 2));
                                 }
 #endif
-                                actionList.Add(GetRecordForText(string.Empty, mode: -1));
+                                actionList.Add(Replies.GetRecordForText(string.Empty, mode: -1));
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                             }
                             bingresponse = "";
@@ -216,7 +218,7 @@ namespace callbot
                                 Debug.WriteLine("^^^^^^^^^^^Bing not captured");
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    GetRecordForText("I didn't catch that, would you kindly repeat?")
+                                    Replies.GetRecordForText("I didn't catch that, would you kindly repeat?")
                                 };
                                 sttFailed = false;
                                 silenceTimes++;
@@ -226,7 +228,7 @@ namespace callbot
                             {
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
-                                    GetPromptForText("Is anybody there? Bye.",2),
+                                    Replies.GetPromptForText("Is anybody there? Bye.",2),
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -240,7 +242,7 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //GetRecordForText("I didn't catch that")
-                                    GetSilencePrompt()
+                                    Replies.GetSilencePrompt()
 
                                 };
 
@@ -253,7 +255,7 @@ namespace callbot
             {
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
-                    GetPromptForText("Message reply not recieved, Bye.", 2),
+                    Replies.GetPromptForText("Message reply not recieved, Bye.", 2),
                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                 };
                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -264,6 +266,13 @@ namespace callbot
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
             //logger.uploadToRS();
+            Debug.WriteLine("###################Hanging up");
+
+            //remove the persistent variables first
+            int retries = 0;
+            BotStateEdit.removeUserData(participant, "activeMode", ref retries);
+            BotStateEdit.removeUserData(participant, "activeAcc", ref retries);
+
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
@@ -279,55 +288,7 @@ namespace callbot
                 await CallOnRecordCompleted(recordOutcomeEvent);
             }
         }
-
-        private Record SetRecord(string id, PlayPrompt prompt, bool playBeep, int maxSilenceTimeout)
-        {
-            return new Record()
-            {
-                OperationId = id,
-                PlayPrompt = prompt,
-                MaxDurationInSeconds = 8,
-                InitialSilenceTimeoutInSeconds = 3,
-                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
-                PlayBeep = playBeep,
-                RecordingFormat = RecordingFormat.Wav,
-                StopTones = new List<char> { '#' }
-            };
-        }
-
-        private Record SetRecord(string id, bool playBeep, int maxSilenceTimeout)
-        {
-            return new Record()
-            {
-                OperationId = id,
-                MaxDurationInSeconds = 8,
-                InitialSilenceTimeoutInSeconds = 3,
-                MaxSilenceTimeoutInSeconds = maxSilenceTimeout,
-                PlayBeep = playBeep,
-                RecordingFormat = RecordingFormat.Wav,
-                StopTones = new List<char> { '#' }
-            };
-        }
-
-        private ActionBase GetRecordForText(string promptText, bool playbeep = false, int mode = 2, int silenceTimeout = 3)
-        {
-            PlayPrompt prompt;
-            if (string.IsNullOrEmpty(promptText))
-                prompt = null;
-            else
-                prompt = GetPromptForText(promptText, mode);
-            var id = Guid.NewGuid().ToString();
-
-            return SetRecord(id, prompt, playbeep, silenceTimeout);
-        }
-
-        private ActionBase GetRecordForMessage()
-        {
-            var id = Guid.NewGuid().ToString();
-
-            return SetRecord(id, true, 2);
-        }
-
+            
         private async Task RecordOnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             Debug.WriteLine("00000");
@@ -350,7 +311,7 @@ namespace callbot
                         await SendRecordMessage();
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForMessage()
+                            Replies.GetRecordForMessage()
                         };
                     }
                     // all record done
@@ -358,7 +319,7 @@ namespace callbot
                     {
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForText("Record completed, uploading recording!")
+                            Replies.GetRecordForText("Record completed, uploading recording!")
                         };
                     }
                 }
@@ -386,7 +347,7 @@ namespace callbot
                         System.IO.Directory.Delete(recordPath, true);
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForText("Upload completeted, bye!", silenceTimeout: 2),
+                            Replies.GetRecordForText("Upload completeted, bye!", silenceTimeout: 2),
                             new Hangup() { OperationId = Guid.NewGuid().ToString() }
                         };
                     }
@@ -396,7 +357,7 @@ namespace callbot
                         Debug.WriteLine(string.Format("Number of recorded clips {0} less than {1}", dir.GetFiles("*.wav").Length.ToString(), "3"));
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForText("Record failed, bye!", silenceTimeout: 2),
+                            Replies.GetRecordForText("Record failed, bye!", silenceTimeout: 2),
                             new Hangup() { OperationId = Guid.NewGuid().ToString() }
                         };
                     }
@@ -418,7 +379,7 @@ namespace callbot
                     await SendRecordMessage();
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForMessage()
+                        Replies.GetRecordForMessage()
                     };
                     silenceTimes++;
                 }
@@ -429,14 +390,14 @@ namespace callbot
                         silenceTimes++;
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForText("I didn't catch that, would you kindly repeat?", playbeep: true, silenceTimeout: 2)
+                            Replies.GetRecordForText("I didn't catch that, would you kindly repeat?", playbeep: true, silenceTimeout: 2)
                         };
                     }
                     else
                     {
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            GetRecordForText("I didn't catch that, record terminated!", silenceTimeout: 2),
+                            Replies.GetRecordForText("I didn't catch that, record terminated!", silenceTimeout: 2),
                             new Hangup() { OperationId = Guid.NewGuid().ToString() }
                         };
                         recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -456,7 +417,7 @@ namespace callbot
 #if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
-                string replyAudioPath = "http://ec2-54-169-253-0.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-54-169-86-118.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -473,11 +434,12 @@ namespace callbot
 
                 Debug.WriteLine("^^^^^^^^^Record succeed, bing process");
                 BingSpeech bs = new BingSpeech(recordOutcomeEvent.ConversationResult, t => response.Add(t), s => sttFailed = s, b => bingresponse = b);
+                ;
                 bs.CreateDataRecoClient();
                 bs.SendAudioHelper(record);
                 recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
-                    GetSilencePrompt()
+                    Replies.GetSilencePrompt()
                 };
             }
             else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated")
@@ -492,7 +454,7 @@ namespace callbot
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Bye bye!",2),
+                        Replies.GetPromptForText("Bye bye!",2),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -504,7 +466,7 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch, would you kindly repeat?")
+                        Replies.GetRecordForText("I didn't catch, would you kindly repeat?")
                     };
                 }
             }
@@ -542,123 +504,6 @@ namespace callbot
 
             await connector.Conversations.SendToConversationAsync((Activity)newMessage);
         }
-
-        // audio playback with url
-        private static PlayPrompt PlayAudioFile(string audioPath)
-        {
-
-            //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
-            System.Uri uri = new System.Uri(audioPath);
-
-            var prompt = new Prompt { FileUri = uri };
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-        }
-
-        private static PlayPrompt GetPromptForText(string text, int mode)
-        {
-
-            System.Uri uri;
-            //logger.WriteToText("BOT: ", text);
-            if (mode == -2)
-            {
-                // Configure the audio output. 
-                MemoryStream ms = new MemoryStream();
-                SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
-
-                string tempPath = Path.GetTempPath();
-                synth.SetOutputToWaveStream(ms);
-                synth.Speak(text);
-
-                ////now convert to mp3 using LameEncoder or shell out to audiograbber
-                am.ConvertWavStreamToWav(ref ms, $"{tempPath}Rate.wav");
-
-                uri = new System.Uri(am.azureUrl);
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else
-            {
-                var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-            }
-        }
-
-        private static PlayPrompt GetPromptForText(List<string> text)
-        {
-            var prompts = new List<Prompt>();
-            foreach (var txt in text)
-            {
-                //logger.WriteToText("BOT: ", txt);
-
-                if (!string.IsNullOrEmpty(txt))
-                    prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
-            }
-            if (prompts.Count == 0)
-                return GetSilencePrompt();
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
-        }
-
-        private void genResponseCard(IEnumerable<Participant> participant)
-        {
-
-            string serviceUrl = "https://smba.trafficmanager.net/apis/";
-            MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
-
-            string recipientId = participant.ElementAt(0).Identity;
-            string botId = participant.ElementAt(1).Identity;
-            MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
-            ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
-
-            List<CardAction> cardButtons = new List<CardAction>();
-
-            CardAction plButton1 = new CardAction()
-            {
-                Value = "call",
-                Type = ActionTypes.PostBack,
-                Title = "call"
-            };
-            CardAction plButton2 = new CardAction()
-            {
-                Value = "record",
-                Type = ActionTypes.PostBack,
-                Title = "record"
-            };
-
-            cardButtons.Add(plButton1);
-            cardButtons.Add(plButton2);
-
-            var heroCard = new HeroCard()
-            {
-                Text = "Choose your destiny!",
-                Buttons = cardButtons
-            };
-
-            IMessageActivity newMessage = Activity.CreateMessageActivity();
-            newMessage.Type = ActivityTypes.Message;
-            newMessage.From = new ChannelAccount(botId, ConfigurationManager.AppSettings["BotId"]);
-            newMessage.Conversation = new ConversationAccount(false, recipientId);
-            newMessage.Recipient = new ChannelAccount(recipientId);
-
-            newMessage.Attachments = new List<Attachment> {
-                heroCard.ToAttachment()
-            };
-
-            var response = connector.Conversations.SendToConversation((Activity)newMessage);
-            
-            //logger.WriteToText("BOT: ", txt);
-        }
-
-        private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 300)
-        {
-            var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-        }
+        
     }
-
-
 }
-
-
