@@ -159,7 +159,14 @@ namespace callbot
                     if (recordNum == -1)
                     {
                         Debug.WriteLine("^^^^^^Battle prompt");
-                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Lets start a verbal battle!", playbeep:true) };
+                        playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                        {
+                            Replies.GetPromptForText($"Transferring call to {activeAcc}!",2),
+                            getVoiceAsync("Hello...", 10).Result,
+                            Replies.GetRecordForText(string.Empty, mode: -1)
+
+                        };
+                        silenceTimes = 0;
                         recordNum++;
                     }
                     else
@@ -175,11 +182,11 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //Replies.GetPromptForText("Anybody there? Bye.", 2),
-                                    getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
+                                    getVoiceAsync("Bye bye.", 36).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                                silenceTimes = 0;
+                                //silenceTimes = 0;
 
                             }
                             else
@@ -232,11 +239,11 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //Replies.GetPromptForText("Is anybody there? Bye.",2),
-                                    getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
+                                    getVoiceAsync("Is anybody there? Bye.", 35).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
-                                silenceTimes = 0;
+                                //silenceTimes = 0;
                             }
                             else
                             {
@@ -259,7 +266,8 @@ namespace callbot
             {
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
-                    Replies.GetPromptForText("Message reply not recieved, Bye.", 2),
+                    //Replies.GetPromptForText("Message reply not recieved, Bye.", 2),
+                    getVoiceAsync("Message reply not recieved, Bye", 35).Result,
                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                 };
                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -302,6 +310,8 @@ namespace callbot
             {
                 var record = await recordOutcomeEvent.RecordedContent;
                 silenceTimes = 0;
+
+#region RECORD_SAVE
                 if (recordNum < clipNum)//ED.response.Count() + 1)
                 {
                     Debug.WriteLine("#########################SAVING RECORD");
@@ -368,6 +378,7 @@ namespace callbot
 
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
                 }
+#endregion
             }
             else if (recordOutcomeEvent.RecordOutcome.FailureReason == "CallTerminated")
             {
@@ -389,7 +400,7 @@ namespace callbot
                 }
                 else
                 {
-                    if (silenceTimes < 3)
+                    if (silenceTimes < 5)
                     {
                         silenceTimes++;
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
@@ -421,7 +432,7 @@ namespace callbot
             // When recording is done, send to BingSpeech to process
             if (recordOutcomeEvent.RecordOutcome.Outcome == Outcome.Success)
             {
-#if RELEASE
+#if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
                 string replyAudioPath = "http://ec2-52-221-208-165.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
@@ -457,11 +468,12 @@ namespace callbot
             }
             else
             {
-                if (silenceTimes > 1)
+                if (silenceTimes > 5)
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        Replies.GetPromptForText("Bye bye!",2),
+                        //Replies.GetPromptForText("Bye bye!",2),
+                        getVoiceAsync("Bye bye", 35).Result,
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
