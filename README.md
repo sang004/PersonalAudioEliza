@@ -6,54 +6,55 @@ This is a vocal version of the good old Eliza callbot, now more accessible than 
 ## Table of Content
 
 [Getting started](#getting-started)  
-[Prerequisites](#Prerequisites)  
-[Bot setup](#Bot setup)
-[Local installation](#Local)  
-[Azure installation](#Azure)  
-[Authors](#Authors)  
-[License](#License)  
-[Built With](#Built-With)  
+[Prerequisites](#prerequisites)  
+[Bot setup](#bot-setup)  
+[Local installation](#local)  
+[Azure installation](#azure)  
+[Authors](#authors)  
+[License](#license)  
+[Built With](#built-with)  
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.  
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+__Always run Visual studio as ADMINISTRATOR__
 
 ## Prerequisites
 
 Things you need to install:
 
-- Windows 8 and above
-- [Visual Studio Community edition 2015 and above](https://www.visualstudio.com/downloads/)
-- [ngrok](https://ngrok.com/download)
-- [Skype](https://www.skype.com/en/download-skype/skype-for-computer/)
+- Windows 8 and above  
+- [Visual Studio Community edition 2015 and above](https://www.visualstudio.com/downloads/)  
+- [ngrok](https://ngrok.com/download)  
+- [Skype](https://www.skype.com/en/download-skype/skype-for-computer/)  
 
 ## Setup  
 
-### Bot setup
-https://itsamiraclemycodeworks.wordpress.com/2017/01/31/first-blog-post/
+### Bot setup  
+https://itsamiraclemycodeworks.wordpress.com/2017/01/31/first-blog-post/  
 
-Firstly, login into bot framework directory then click create bot
-![Picture](https://user-images.githubusercontent.com/8624828/27782087-92c97712-6003-11e7-8e54-94dbdd287689.png)
+Firstly, login into _bot framework directory_ then click create bot  
+![Picture](https://user-images.githubusercontent.com/8624828/27782087-92c97712-6003-11e7-8e54-94dbdd287689.png)  
 
-Then describe it
-![Picture](https://user-images.githubusercontent.com/8624828/27782129-bd5b28ae-6003-11e7-9038-510d1fea540e.png)
+Then describe it  
+![Picture](https://user-images.githubusercontent.com/8624828/27782129-bd5b28ae-6003-11e7-9038-510d1fea540e.png)  
 
-For this field, you will need the host address of where it is hosted. Either in a tunneling address from ngrok or Azure app service host.
+For this field, you will need the host address of where it is hosted. Either in a tunneling address from _ngrok_ or _Azure_ app service host.  
 ```
 https://a8e2caa6.ngrok.io/api/messages
 https://callingbot01name.azurewebsites.net/api/messages
-```
-![Picture](https://user-images.githubusercontent.com/8624828/27782171-f1cbc012-6003-11e7-8d3f-c3938100f50c.png)
+```  
+![Picture](https://user-images.githubusercontent.com/8624828/27782171-f1cbc012-6003-11e7-8d3f-c3938100f50c.png)  
 
-And follow through the instructions after clicking the create microsoft app id and password.
-![Picture](https://user-images.githubusercontent.com/8624828/27782197-107271fa-6004-11e7-8f13-601db57f5458.png)
+And follow through the instructions after clicking the create microsoft app id and password.  
+![Picture](https://user-images.githubusercontent.com/8624828/27782197-107271fa-6004-11e7-8f13-601db57f5458.png)  
 
 Leave every thing else as default and click on save settings.  
 
-With the bot up, you should be able to see some default channels
-![Picture](https://user-images.githubusercontent.com/8624828/27782415-09bafa5c-6005-11e7-9900-02a351b51985.png)
+With the bot up, you should be able to see some default channels  
+![Picture](https://user-images.githubusercontent.com/8624828/27782415-09bafa5c-6005-11e7-9900-02a351b51985.png)  
 
-Finally, to add call ability to the bot, select edit on the "Skype" channel and onto the "Calling" tab. Enable "Calling" and populate the webhook
+Finally, to add call ability to the bot, select edit on the "Skype" channel and onto the "Calling" tab. Enable "Calling" and populate the webhook  
 ```
 https://a8e2caa6.ngrok.io/api/calling/call
 https://callingbot01name.azurewebsites.net/api/calling/call
@@ -61,34 +62,38 @@ https://callingbot01name.azurewebsites.net/api/calling/call
 ![Picture](https://user-images.githubusercontent.com/8624828/27782530-7d5c13a6-6005-11e7-88b1-a48ec7f59c69.png)
 
 ### Initial Solution setup
-After cloning the repository, go to the directory:
-![Picture](https://user-images.githubusercontent.com/8624828/27780440-7ac02f60-5ffb-11e7-9369-e11014e58aa5.png)  
-Access 'C:\Users\user\Source\Repos\bot\.vs\config\applicationhost.config' and edit this file
-![Picture](https://user-images.githubusercontent.com/8624828/27780484-c9662ac0-5ffb-11e7-8d71-6462a94f6d34.png)
-At line 168, replicate the line and paste below it. At the replicated line, change "localhost" to astriek to tell the application to listen to every process on the port 3999.
-![Picture](https://user-images.githubusercontent.com/8624828/27780538-11a905d2-5ffc-11e7-870e-9984997c7d07.png)
+After cloning the repository, go to the directory:  
+![Picture](https://user-images.githubusercontent.com/8624828/27780440-7ac02f60-5ffb-11e7-9369-e11014e58aa5.png)    
+Access 'C:\Users\user\Source\Repos\bot\.vs\config\applicationhost.config' and edit this file  
+![Picture](https://user-images.githubusercontent.com/8624828/27780484-c9662ac0-5ffb-11e7-8d71-6462a94f6d34.png)  
+At line 168, replicate the line and paste below it. At the replicated line, change "localhost" to astriek to tell the application to listen to every process on the port 3999.  
+![Picture](https://user-images.githubusercontent.com/8624828/27780538-11a905d2-5ffc-11e7-870e-9984997c7d07.png)  
 
-### Web.Config Configurations
+### Web.Config Configurations  
+There are a few sections of _Web.config_ that requires attention:
+- Bot  
+Tells the bot framework connector which bot should be used. With parameters of bot ID (name of your bot) and the Microsoft application credentials attached to it.  
+![Picture](https://user-images.githubusercontent.com/8624828/27781447-7ce3e7a0-6000-11e7-9b9e-08de78736f33.png)  
 
-- Bot
-![Picture](https://user-images.githubusercontent.com/8624828/27781447-7ce3e7a0-6000-11e7-9b9e-08de78736f33.png)
+- Local  
+The bot can be hosted locally on your desktop, it is good for repeated testing and debugging. When running it locally, it requires a tunneling program [_ngrok_](#Local) to be running, explanation is as below.
+![Picture](https://user-images.githubusercontent.com/8624828/27781502-ad0b015c-6000-11e7-9080-5aee7192500b.png) 
 
-- Azure
-![Picture](https://user-images.githubusercontent.com/8624828/27781476-969024c0-6000-11e7-94bc-3141519ecd47.png)
+- Azure  
+When the code is ready, deploying to Azure will allow the bot to run without the need to keeping your desktop alive. Trial account is available for 1 month with 200USD credit. (at the time of this writing)  
+![Picture](https://user-images.githubusercontent.com/8624828/27781476-969024c0-6000-11e7-94bc-3141519ecd47.png)  
 
-- Local
-When running it locally, it requires a tunneling program ["ngrok"](#Local) to be running, explanation is as below.
-![Picture](https://user-images.githubusercontent.com/8624828/27781502-ad0b015c-6000-11e7-9080-5aee7192500b.png)
+ 
+- Other services  
+Services such as [_Bing speech_](https://azure.microsoft.com/en-us/services/cognitive-services/speech/) is required for transcribing the caller's speech to text and in order for the code to know how to respond.
+![Picture](https://user-images.githubusercontent.com/8624828/27781547-ea00db5e-6000-11e7-99c1-fcd6c24c43dc.png)  
 
-- Other services
-![Picture](https://user-images.githubusercontent.com/8624828/27781547-ea00db5e-6000-11e7-99c1-fcd6c24c43dc.png)
+## Deployment  
 
-## Deployment
-
-### Local
-Run code visual studio as administrator, in project folder "..\bot\.vs\config\applicationhost.config", make sure to add
+### Local  
+Run code visual studio as **administrator**, in project folder "..\bot\.vs\config\applicationhost.config", make sure to add
 ```xml
-					<binding protocol="http" bindingInformation="*:3999:*" />
+<binding protocol="http" bindingInformation="*:3999:*" />
 ```
 at line below line 168 to ensure that the tunneling would work.
 
@@ -104,10 +109,13 @@ https://a8e2caa6.ngrok.io/api/messages
 and skype channel's calling webhook to
 ```
 https://a8e2caa6.ngrok.io/api/calling/call
-```
+```  
+
+When the configurations are done, just click on the play button at the top to start the code!
+![Picture](https://user-images.githubusercontent.com/8624828/27785414-284b2ae0-6010-11e7-96af-f8693c770660.png)  
 
 ### Azure
-Right click the project and click "Publish"
+Open up the soluution, right click the project and click 'Publish':
 
 ![image](https://user-images.githubusercontent.com/8624828/27728398-76b3733a-5db4-11e7-84e3-916eb9ed46ac.png)
 
@@ -117,20 +125,12 @@ When deployment to Azure is successful, this will show up:
 
 ![Picture](https://user-images.githubusercontent.com/8624828/27780003-f77c21ec-5ff8-11e7-8450-c65521ae85a9.png)
 
-
-End with an example of getting some data out of the system or using it for a little demo
-
 ## Running the tests
 
-Explain how to run the automated tests for this system
+Before the bot is published onto the Microsoft bot directory that is visible to the public, you can add the bot by clicking on the Skype icon here:  
+![Picture](https://user-images.githubusercontent.com/8624828/27786328-4820edd4-6013-11e7-8811-6ce90a0ff07f.png)
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
+And just call it and start talking :)
 
 ## Built With
 
@@ -142,9 +142,6 @@ Give an example
 ## Contributing
 
 Please read [CONTRIBUTING.md]() for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
 
 ## Authors
 
