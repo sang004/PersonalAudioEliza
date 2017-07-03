@@ -121,6 +121,14 @@ Open up the soluution, right click the project and click 'Publish':
 
 With this, click on next and change the name of the application if desired. There is an option of Debug/Release, as this is a working copy, choosing 'Release' is fine. So click 'Publish'
 
+![Picture](https://user-images.githubusercontent.com/8624828/27797600-dc193726-6040-11e7-9276-658a21596530.png)
+
+![Picture](https://user-images.githubusercontent.com/8624828/27797692-2988f938-6041-11e7-893f-8467795f81e1.png)
+
+To change if the published code is going to be in DEBUG / RELEASE MODE, click "edit settings" and change it here:
+![Picture](https://user-images.githubusercontent.com/8624828/27797641-fd9efa0c-6040-11e7-875e-567d2fbd28ad.png)
+
+
 When deployment to Azure is successful, this will show up:
 
 ![Picture](https://user-images.githubusercontent.com/8624828/27780003-f77c21ec-5ff8-11e7-8450-c65521ae85a9.png)
