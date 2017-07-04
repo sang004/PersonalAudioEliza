@@ -142,10 +142,12 @@ And just call it and start talking :)
 
 ## Built With
 
-* [Bot framework C#](https://docs.microsoft.com/en-us/bot-framework/dotnet/bot-builder-dotnet-overview) - The bot framework used 
-* [C#](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/) - language
-* [Skype API](https://dev.skype.com/) - The calling platform
-* [Bing Speech API](https://docs.microsoft.com/en-us/azure/cognitive-services/speech/home) - Speech to Text
+* [Bot framework C#](https://docs.microsoft.com/en-us/bot-framework/dotnet/bot-builder-dotnet-overview) - Bot building framework used  
+* [C#](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/) - language  
+* [Skype API](https://dev.skype.com/) - The calling platform  
+* [Bing Speech API](https://docs.microsoft.com/en-us/azure/cognitive-services/speech/home) - Speech to Text  
+* [Resource Space](https://aws.amazon.com/marketplace/pp/B00CFPUSVY/Ref=mtk_wir_resourcespace) - To store the audio clips  
+* [Azure Storage](https://azure.microsoft.com/en-us/services/storage/) - Generate audio clip url for use in ResourceSpace upload  
 
 ## Contributing
 
