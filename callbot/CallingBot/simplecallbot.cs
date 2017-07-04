@@ -182,7 +182,7 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //Replies.GetPromptForText("Anybody there? Bye.", 2),
-                                    getVoiceAsync("Bye bye.", 36).Result,
+                                    getVoiceAsync("Bye bye.", 35).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -227,7 +227,7 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //Replies.GetRecordForText("I didn't catch that, would you kindly repeat?")
-                                    getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                                    getVoiceAsync("I didn't catch that, would you kindly repeat?", 33).Result,
                                     Replies.GetRecordForText(string.Empty, mode: -1)
                                 };
                                 sttFailed = false;
@@ -239,7 +239,7 @@ namespace callbot
                                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                                 {
                                     //Replies.GetPromptForText("Is anybody there? Bye.",2),
-                                    getVoiceAsync("Is anybody there? Bye.", 35).Result,
+                                    getVoiceAsync("Is anybody there? Bye.", 34).Result,
                                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                                 };
                                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -267,7 +267,7 @@ namespace callbot
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     //Replies.GetPromptForText("Message reply not recieved, Bye.", 2),
-                    getVoiceAsync("Message reply not recieved, Bye", 35).Result,
+                    getVoiceAsync("Message reply not recieved, Bye", 34).Result,
                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                 };
                 playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -405,7 +405,7 @@ namespace callbot
                         silenceTimes++;
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                            getVoiceAsync("I didn't catch that, would you kindly repeat?", 33).Result,
                             Replies.GetRecordForText(string.Empty, mode: -1)
                             //Replies.GetRecordForText("I didn't catch that, would you kindly repeat?", playbeep: true, silenceTimeout: 2)
                         };
@@ -415,7 +415,7 @@ namespace callbot
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             //Replies.GetRecordForText("I didn't catch that, record terminated!", silenceTimeout: 2),
-                            getVoiceAsync("I didn't catch that, record terminated!", 35).Result,
+                            getVoiceAsync("I didn't catch that, record terminated!", 34).Result,
                             new Hangup() { OperationId = Guid.NewGuid().ToString() }
                         };
                         recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -435,7 +435,7 @@ namespace callbot
 #if DEBUG
                 //TEST AUDIO START
                 ///Retrieve random audio            
-                string replyAudioPath = "http://ec2-52-221-208-165.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-13-228-78-239.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -473,7 +473,7 @@ namespace callbot
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         //Replies.GetPromptForText("Bye bye!",2),
-                        getVoiceAsync("Bye bye", 35).Result,
+                        getVoiceAsync("Bye bye", 34).Result,
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -486,7 +486,7 @@ namespace callbot
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
                         //Replies.GetRecordForText("I didn't catch, would you kindly repeat?")
-                        getVoiceAsync("I didn't catch that, would you kindly repeat?", 34).Result,
+                        getVoiceAsync("I didn't catch that, would you kindly repeat?", 33).Result,
                         Replies.GetRecordForText(string.Empty, mode: -1)
                     };
                 }
