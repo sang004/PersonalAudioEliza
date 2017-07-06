@@ -1,7 +1,6 @@
 # Phone Bot Type_0
-
-![Picture](https://user-images.githubusercontent.com/8624828/27719641-5f0fc522-5d86-11e7-84e5-316606cbf36a.PNG)  
-This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory! 
+This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory!  
+![image](https://user-images.githubusercontent.com/8624828/27903187-eef230ce-626a-11e7-80cf-0c36ea28b175.png)
 
 ## Table of Content
 
