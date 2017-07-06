@@ -1,7 +1,6 @@
 # Phone Bot Type_1
-
-![Picture](https://user-images.githubusercontent.com/8624828/27719641-5f0fc522-5d86-11e7-84e5-316606cbf36a.PNG)  
-This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory! 
+This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory! Bot has 2 modes, either record or converse, the diagram below shows an overview of the process:  
+![image](https://user-images.githubusercontent.com/8624828/27902957-3fa4728a-626a-11e7-8bbb-a6900a336494.png)
 
 ## Table of Content
 
@@ -139,6 +138,10 @@ Before the bot is published onto the Microsoft bot directory that is visible to 
 ![Picture](https://user-images.githubusercontent.com/8624828/27786328-4820edd4-6013-11e7-8811-6ce90a0ff07f.png)
 
 And just call it and start talking :)
+
+The bot requires 2 text input to start  
+![Picture](https://user-images.githubusercontent.com/8624828/27719641-5f0fc522-5d86-11e7-84e5-316606cbf36a.PNG)  
+
 
 ## Built With
 
