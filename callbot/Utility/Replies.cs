@@ -171,9 +171,13 @@ namespace callbot.utility
 
         public static ActionBase GetRecordForMessage()
         {
+            string audioPath = "https://callbotstorage.blob.core.windows.net/built-in/Electronic_Chime.wav";
+            System.Uri uri = new System.Uri(audioPath);
+            var prompt = new Prompt { FileUri = uri };
+            var playPrompt = new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
             var id = Guid.NewGuid().ToString();
 
-            return SetRecord(id, true, 2);
+            return SetRecord(id, playPrompt, false, 2);
         }
 
     }
