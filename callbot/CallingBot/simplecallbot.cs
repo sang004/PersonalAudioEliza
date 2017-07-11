@@ -315,7 +315,7 @@ namespace callbot
 #region RECORD_SAVE
                 if (recordNum < clipNum)//ED.response.Count() + 1)
                 {
-                    Debug.WriteLine("#########################SAVING RECORD");
+                    Debug.WriteLine("#########################SAVING RECORD AT: " + recordPath);
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
                     string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, activeAcc);
@@ -515,7 +515,7 @@ namespace callbot
             else
             {
                 string text = ED.response[recordNum];
-                finalMsg = "Please record the sentence:\n" + text;
+                finalMsg = string.Format("{0}/{1}: {2}\n", recordNum + 1, clipNum, text);
             }
 
             IMessageActivity newMessage = Activity.CreateMessageActivity();

@@ -73,7 +73,7 @@ namespace callbot
             // This creates a reference to the append blob we are going to use.
         
             // use GUID to generate a unique file name every time
-            fileName = string.Format(@"{0}.txt", Guid.NewGuid()); 
+            fileName = string.Format(@"{0}.wav", Guid.NewGuid()); 
             appBlob = container.GetAppendBlobReference(fileName);
 
             // Now we are going to check if todays file exists and if it doesn't we create it.
