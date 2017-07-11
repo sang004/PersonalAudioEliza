@@ -50,6 +50,7 @@ namespace callbot
         private static Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
         private static int clipNum = ED.response.Count;
         private static audioMan am = new audioMan();
+        private SilenceTrim Trimmer = new SilenceTrim();
         private RSAPI RS = new RSAPI(ConfigurationManager.AppSettings["RSId"], ConfigurationManager.AppSettings["RSPassword"]);
         //RS. ConfigurationManager.AppSettings("RSId", ConfigurationManager.AppSettings("RSPassword");
 
@@ -144,7 +145,8 @@ namespace callbot
                     if (recordNum == -1)
                     {
                         // create a directory in the appdata temp folder to temporary store audio on local
-                        recordPath = Path.GetTempPath() + activeAcc.ToString(); //string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
+                        //recordPath = Path.GetTempPath() + activeAcc.ToString(); //string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
+                        recordPath = string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
                         Directory.CreateDirectory(recordPath);
 
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
@@ -317,8 +319,10 @@ namespace callbot
                     Debug.WriteLine("#########################SAVING RECORD");
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
+                    string fileName = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, activeAcc);
                     string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, activeAcc);
                     am.ConvertWavStreamToWav(ref ms, filePath);
+                    Trimmer.TrimSilenceEnd(fileName, fileName);
                     recordNum++;
                     if (recordNum < clipNum)
                     {
@@ -358,7 +362,7 @@ namespace callbot
                             }
                         }
                         // Delete the folder contains the clips
-                        System.IO.Directory.Delete(recordPath, true);
+                        //System.IO.Directory.Delete(recordPath, true);
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
                             Replies.GetRecordForText("Upload completeted, bye!", silenceTimeout: 2),
@@ -367,7 +371,7 @@ namespace callbot
                     }
                     else
                     {
-                        System.IO.Directory.Delete(recordPath, true);
+                        //System.IO.Directory.Delete(recordPath, true);
                         Debug.WriteLine(string.Format("Number of recorded clips {0} less than {1}", dir.GetFiles("*.wav").Length.ToString(), "3"));
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
