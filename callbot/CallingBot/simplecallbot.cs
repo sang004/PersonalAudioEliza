@@ -25,8 +25,8 @@ namespace callbot
         }
 
         private List<string> response = new List<string>();
-        private string activeAcc = "";
-        private string activeMode = "";
+        private string activeAcc = null;
+        private string activeMode = null;
         private bool isSet;
         int silenceTimes = 0;
 
@@ -87,7 +87,7 @@ namespace callbot
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
             {
                 new Answer { OperationId = id },
-                Replies.GetPromptForText("Top of the day to you! What would you like to do today?",2)
+                Replies.GetPromptForText("What would you like to do today? I just messaged you.",2)
             };
 
             return Task.FromResult(true);
@@ -121,17 +121,33 @@ namespace callbot
             // only run once when it first comes into this function
             if (isSet == false)
             {
-                //get click input here
-                Replies.GenResponseCard(participant);
-                activeMode = GetActiveProperty(activeMode, "activeMode", 50);
-                Debug.WriteLine($"ACTION: {activeMode}");
-                //Debug.WriteLine($"equal: {activeMode.Equals("None")}");
+                // ask user for action (call / record)
+                if (activeMode == null) {
+                    //get click input here
+                    Replies.GenResponseCard(participant);
+                    activeMode = GetActiveProperty(activeMode, "activeMode", 50);
+                    Debug.WriteLine($"ACTION: {activeMode}");
+                }
+
+                //When user has choosen which mode (call / record), ask profile name
                 if (activeMode != null)
                 {
-                    await SendRecordMessage($"Who would you like to {activeMode} as? 'as ::name::'");
+                    await SendRecordMessage($"Who would you like to {activeMode} as?'");
                     activeAcc = GetActiveProperty(activeAcc, "activeAcc", 50);
                     Debug.WriteLine($"WHO: {activeAcc}");
 
+                    if (activeMode == "record")
+                    {
+                        int noOfClips = await rsapi.isExist(activeAcc);
+                        if (noOfClips > 0)
+                        {
+                            int retries = 0;
+                            BotStateEdit.removeUserData(participant, "activeAcc", ref retries);
+                            await SendRecordMessage($"Profile already exist, please choose another");
+                            activeAcc = null;
+                            activeAcc = GetActiveProperty(activeAcc, "activeAcc", 50);
+                        }
+                    }
                 }
 
                 isSet = activeAcc != null && activeMode != null;
@@ -145,7 +161,7 @@ namespace callbot
                     if (recordNum == -1)
                     {
                         // create a directory in the appdata temp folder to temporary store audio on local
-                        recordPath = Path.GetTempPath() + activeAcc.ToString(); //string.Format("C:\\Users\\Joyce\\audio_records\\{0}", activeAcc.ToString());
+                        recordPath = Path.GetTempPath() + activeAcc.ToString();
                         Directory.CreateDirectory(recordPath);
 
                         playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
@@ -192,27 +208,6 @@ namespace callbot
                             }
                             else
                             {
-                                //else identify words
-                                //                                string output = await ED.Reply(bingresponse);
-                                //                                int outputIndex = ED.response.IndexOf(output);
-                                //                                string audioKeyword = outputIndex + "_" + activeAcc;
-                                ////#if DEBUG
-                                ////                                //use bot framework voice, mode -1
-                                ////                                Debug.WriteLine($"Bing response: {output}");
-                                ////                                actionList.Add(Replies.GetPromptForText(output, -1));
-
-                                ////#else
-                                //                                //microsoft stt, mode 2
-                                //                                string path = rsapi.Call(audioKeyword).Result;
-                                //                                if (!path.Equals(""))
-                                //                                {
-                                //                                    actionList.Add(Replies.PlayAudioFile(path));
-                                //                                }
-                                //                                else
-                                //                                {
-                                //                                    actionList.Add(Replies.GetPromptForText(output, 2));
-                                //                                }
-                                ////#endif
                                 actionList.Add(await getVoiceAsync(bingresponse));
 
                                 actionList.Add(Replies.GetRecordForText(string.Empty, mode: -1));
@@ -265,13 +260,15 @@ namespace callbot
             }
             else
             {
+                // before any mode is selected
                 playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     //Replies.GetPromptForText("Message reply not recieved, Bye.", 2),
-                    getVoiceAsync("Message reply not recieved, Bye", 34).Result,
+                    Replies.GetPromptForText("I didn't receive any replies. Next time then, bye.", 2),
                     new Hangup() { OperationId = Guid.NewGuid().ToString() }
                 };
-                playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                playPromptOutcomeEvent.ResultingWorkflow = null;
+                silenceTimes = 0;
             }
             return Task.CompletedTask;
         }

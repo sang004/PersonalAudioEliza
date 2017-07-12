@@ -31,7 +31,7 @@ namespace callbot
                 {
                     BotStateEdit.setUserData(activity, "activeMode", activity.Text.ToLower(), ref retries);
                 }
-                else if (activity.Text.ToLower().Contains("as"))
+                else/* if (activity.Text.ToLower().Contains("as"))*/
                 {
                     string acc = (activity.Text.ToLower()).Split(' ')[1];
                     BotStateEdit.setUserData(activity, "activeAcc", acc, ref retries);

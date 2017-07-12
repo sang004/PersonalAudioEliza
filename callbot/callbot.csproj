@@ -184,7 +184,9 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CallingBot\simplecallbot.cs" />
+    <Compile Include="Utility\clsWaveProcessor.cs" />
     <Compile Include="Utility\Replies.cs" />
+    <Compile Include="Utility\SilenceTrim.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />

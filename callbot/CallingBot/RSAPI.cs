@@ -214,6 +214,25 @@ namespace callbot
             //Console.WriteLine("result" + collectionID);
         }
 
+        public async Task<int> isExist(string keyword)
+        {
+            List<searchResult> jsonList;
+
+            //fetch audio files based on keywords
+            string jsonResponse = await searchFile(keyword, "4");
+            try
+            {
+                jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
+            }
+            catch (JsonSerializationException)
+            {
+                Debug.WriteLine("======Could not find audio in RS");
+                return 0;
+            }
+
+            return jsonList.Count;
+        }
+
         public string sstpProtocol( string local_filePath )
         {
             string fileExtension = local_filePath.Split('.').Last();
