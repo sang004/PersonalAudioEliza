@@ -22,51 +22,10 @@ namespace callbot.utility
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
 
-        public static PlayPrompt GetPromptForText(string text, int mode)
+        public static PlayPrompt GetPromptForText(string text)
         {
-
-            //System.Uri uri;
-            //logger.WriteToText("BOT: ", text);
-            //if (mode == -2)
-            //{
-            //    // Configure the audio output. 
-            //    MemoryStream ms = new MemoryStream();
-            //    SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
-
-            //    string tempPath = Path.GetTempPath();
-            //    synth.SetOutputToWaveStream(ms);
-            //    synth.Speak(text);
-
-            //    ////now convert to mp3 using LameEncoder or shell out to audiograbber
-            //    am.ConvertWavStreamToWav(ref ms, $"{tempPath}Rate.wav");
-
-            //    uri = new System.Uri(am.azureUrl);
-
-            //    var prompt = new Prompt { FileUri = uri };
-            //    return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            //}
-            //else
-            //{
-                var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-            //}
-        }
-
-        public static PlayPrompt GetPromptForText(List<string> text)
-        {
-            var prompts = new List<Prompt>();
-            foreach (var txt in text)
-            {
-                //logger.WriteToText("BOT: ", txt);
-
-                if (!string.IsNullOrEmpty(txt))
-                    prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
-            }
-            if (prompts.Count == 0)
-                return GetSilencePrompt();
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
+            var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
+            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
 
         // generate a Hero card with call or record button
@@ -156,13 +115,13 @@ namespace callbot.utility
             };
         }
 
-        public static ActionBase GetRecordForText(string promptText, bool playbeep = false, int mode = 2, int silenceTimeout = 3)
+        public static ActionBase GetRecordForText(string promptText, bool playbeep = false, int silenceTimeout = 3)
         {
             PlayPrompt prompt;
             if (string.IsNullOrEmpty(promptText))
                 prompt = null;
             else
-                prompt = Replies.GetPromptForText(promptText, mode);
+                prompt = Replies.GetPromptForText(promptText);
 
             var id = Guid.NewGuid().ToString();
 

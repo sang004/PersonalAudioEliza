@@ -224,14 +224,17 @@ namespace callbot
             {
                 jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
             }
-            catch (JsonSerializationException)
+            catch (Exception ex)
             {
                 Debug.WriteLine("======Could not find audio in RS");
                 return 0;
             }
 
+            if (jsonList == null) {
+                return 0;
+            }
             return jsonList.Count;
-        }
+        } 
 
         public string sstpProtocol( string local_filePath )
         {

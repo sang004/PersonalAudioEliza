@@ -14,78 +14,80 @@ namespace callbot.Dialogs
         public static Dictionary<string, string> reflection = new Dictionary<string, string>();
         public static Dictionary<string, List<string>> psychobabble = new Dictionary<string, List<string>>();
 
-        public List<string> target = new List<string>(new string[33] {
+        public List<string> target = new List<string>(new string[28] {
             @"I need(.*)", @"Why don'?t you(.*)", @"Why can'?t I(.*)", @"I can'?t(.*)", @"I am(.*)", @"Are you(.*)", @"What(.*)", @"How(.*)",
-            @"Because(.*)", @"(.*)sorry(.*)", @"Hello(.*)", @"I think(.*)", @"(.*)friend(.*)", @"Yes(.*)", @"(.*)computer(.*)", @"Is it(.*)", @"It is(.*)",
+            @"Because(.*)", @"(.*)sorry(.*)", @"Hello(.*)", @"I think(.*)", @"Yes(.*)", @"Is it(.*)", @"It is(.*)",
             @"Can you(.*)", @"Can I(.*)", @"You are(.*)", @"I don'?t(.*)", @"I feel(.*)", @"I have(.*)", @"I would(.*)", @"Is there(.*)",
-            @"My(.*)", @"You(.*)", @"Why(.*)", @"I want(.*)", @"(.*)mother(.*)", @"(.*)father(.*)", @"(.*)child(.*)", @"(.*)"});
+            @"My(.*)", @"You(.*)", @"Why(.*)", @"I want(.*)", @"(.*)"});
 
-        public List<string> response = new List<string>(new string[36] {
+        public List<string> response = new List<string>(new string[37] {
                                                                       "Why do you need that?",
 
-                                                                      "Do you really think I don't?",
+                                                                      "Don't temp me",
 
-                                                                      "Do you think you should be able to?",
+                                                                      "Do you think you can?",
 
                                                                       "How do you know you can't?",
 
-                                                                      "Did you come to me because of this?",
+                                                                      "Is this why you called me?",
 
                                                                       "Why does it matter?",
 
                                                                       "Why do you ask?",
 
-                                                                      "How do you suppose?",
+                                                                      "Why does it matter",
 
                                                                        "Is that the real reason?",
 
-                                                                       "There are many times when no apology is needed.",
+                                                                       "No worries.",
 
-                                                                       "Hello... I'm glad you could drop by today.",
+                                                                       "Hi!",
 
-                                                                       "Do you doubt it?",
+                                                                       "Do you really think so?",
 
-                                                                       "Tell me more about your friends.",
-
-                                                                       "You seem quite sure.",
-
-                                                                       "Are you really talking about me?",
+                                                                       "Sure?",
 
                                                                        "Do you think it is?",
 
-                                                                       "You seem very certain.",
+                                                                       "Yes you are right",
 
                                                                        "What makes you think I can't?",
 
-                                                                       "Perhaps you don't want to.",
+                                                                       "For sure you can! Go on.",
 
-                                                                       "Why do you think I am?",
+                                                                       "Why do you think so?",
 
                                                                        "Don't you really?",
 
-                                                                       "Good, tell me more about these feelings.",
+                                                                       "Why do you feel that?",
 
                                                                        "Why do you tell me this?",
 
-                                                                       "Could you explain why you would?",
+                                                                       "Why would you?",
 
-                                                                       "Do you think there is?",
+                                                                       "I am not sure, google it.",
 
-                                                                       "I see.",
+                                                                       "see~ see~",
 
-                                                                       "We should be discussing you, not me.",
+                                                                       "We should be talking about you, not me",
 
-                                                                       "Why don't you tell me the reason why?",
+                                                                       "Why dont't you tell me the reason",
 
                                                                        "What would it mean to you if you got it?",
 
-                                                                       "Tell me more about your mother..",
-
-                                                                       "Tell me more about your father.",
-
-                                                                       "Did you have close friends as a child?",
-
                                                                        "Please tell me more.",
+
+                                                                       "Let's talk about something else",
+
+                                                                       "Can you elaborate on that?",
+
+                                                                       "Why do you say that?",
+
+                                                                       "I see.",
+
+                                                                       "I see. And what does that tell you?",
+
+                                                                       "How do you feel?",
 
                                                                        "I didn't catch, can you repeat yourself?",
 
@@ -104,104 +106,95 @@ namespace callbot.Dialogs
         public void BuildPsychobabble()
         {
 
-            List<string> response1 = new List<string>(new string[] {"Why do you need that?" });
+            List<string> response1 = new List<string>(new string[] { "Why do you need that?" });
             psychobabble.Add(@"I need(.*)", response1);
 
-            List<string> response2 = new List<string>(new string[] {"Do you really think I don't?" });
+            List<string> response2 = new List<string>(new string[] { "Don't temp me" });
             psychobabble.Add(@"Why don'?t you(.*)", response2);
 
-            List<string> response3 = new List<string>(new string[] {"Do you think you should be able to?" });
+            List<string> response3 = new List<string>(new string[] { "Do you think you can?" });
             psychobabble.Add(@"Why can'?t I(.*)", response3);
 
-            List<string> response4 = new List<string>(new string[] {"How do you know you can't?" });
+            List<string> response4 = new List<string>(new string[] { "How do you know you can't?" });
             psychobabble.Add(@"I can'?t(.*)", response4);
 
-            List<string> response5 = new List<string>(new string[] {"Did you come to me because of this?" });
+            List<string> response5 = new List<string>(new string[] { "Is this why you called me?" });
             psychobabble.Add(@"I am(.*)", response5);
 
-            List<string> response7 = new List<string>(new string[] {"Why does it matter?" });
-            psychobabble.Add(@"Are you(.*)", response7);
+            List<string> response6 = new List<string>(new string[] { "Why does it matter?" });
+            psychobabble.Add(@"Are you(.*)", response6);
 
-            List<string> response8 = new List<string>(new string[] {"Why do you ask?" });
-            psychobabble.Add(@"What(.*)", response8);
+            List<string> response7 = new List<string>(new string[] { "Why do you ask?" });
+            psychobabble.Add(@"What(.*)", response7);
 
-            List<string> response9 = new List<string>(new string[] {"How do you suppose?" });
-            psychobabble.Add(@"How(.*)", response9);
+            List<string> response8 = new List<string>(new string[] { "Why does it matter" });
+            psychobabble.Add(@"How(.*)", response8);
 
-            List<string> response10 = new List<string>(new string[] {"Is that the real reason?" });
-            psychobabble.Add(@"Because(.*)", response10);
+            List<string> response9 = new List<string>(new string[] { "Is that the real reason?" });
+            psychobabble.Add(@"Because(.*)", response9);
 
-            List<string> response11 = new List<string>(new string[] {"There are many times when no apology is needed." });
-            psychobabble.Add(@"(.*)sorry(.*)", response11);
+            List<string> response10 = new List<string>(new string[] { "No worries." });
+            psychobabble.Add(@"(.*)sorry(.*)", response10);
 
-            List<string> response12 = new List<string>(new string[] {"Hello... I'm glad you could drop by today." });
-            psychobabble.Add(@"Hello(.*)", response12);
+            List<string> response11 = new List<string>(new string[] { "Hi!" });
+            psychobabble.Add(@"Hello(.*)", response11);
 
-            List<string> response13 = new List<string>(new string[] {"Do you doubt it?" });
-            psychobabble.Add(@"I think(.*)", response13);
+            List<string> response12 = new List<string>(new string[] { "Do you really think so?" });
+            psychobabble.Add(@"I think(.*)", response12);
 
-            List<string> response14 = new List<string>(new string[] {"Tell me more about your friends." });
-            psychobabble.Add(@"(.*)friend(.*)", response14);
+            List<string> response13 = new List<string>(new string[] { "Sure?" });
+            psychobabble.Add(@"Yes(.*)", response13);
 
-            List<string> response15 = new List<string>(new string[] {"You seem quite sure." });
-            psychobabble.Add(@"Yes(.*)", response15);
+            List<string> response14 = new List<string>(new string[] { "Do you think it is?" });
+            psychobabble.Add(@"Is it(.*)", response14);
 
-            List<string> response16 = new List<string>(new string[] {"Are you really talking about me?" });
-            psychobabble.Add(@"(.*)computer(.*)", response16);
+            List<string> response15 = new List<string>(new string[] { "Yes you are right" });
+            psychobabble.Add(@"It is(.*)", response15);
 
-            List<string> response17 = new List<string>(new string[] {"Do you think it is?" });
-            psychobabble.Add(@"Is it(.*)", response17);
+            List<string> response16 = new List<string>(new string[] { "What makes you think I can't?" });
+            psychobabble.Add(@"Can you(.*)", response16);
 
-            List<string> response18 = new List<string>(new string[] {"You seem very certain." });
-            psychobabble.Add(@"It is(.*)", response18);
+            List<string> response17 = new List<string>(new string[] { "For sure you can! Go on." });
+            psychobabble.Add(@"Can I(.*)", response17);
 
-            List<string> response19 = new List<string>(new string[] {"What makes you think I can't?" });
-            psychobabble.Add(@"Can you(.*)", response19);
+            List<string> response18 = new List<string>(new string[] { "Why do you think so?" });
+            psychobabble.Add(@"You are(.*)", response18);
 
-            List<string> response20 = new List<string>(new string[] {"Perhaps you don't want to." });
-            psychobabble.Add(@"Can I(.*)", response20);
+            List<string> response19 = new List<string>(new string[] { "Don't you really?" });
+            psychobabble.Add(@"I don'?t(.*)", response19);
 
-            List<string> response21 = new List<string>(new string[] {"Why do you think I am?" });
-            psychobabble.Add(@"You are(.*)", response21);
+            List<string> response20 = new List<string>(new string[] { "Why do you feel that?" });
+            psychobabble.Add(@"I feel(.*)", response20);
 
-            List<string> response23 = new List<string>(new string[] {"Don't you really?" });
-            psychobabble.Add(@"I don'?t(.*)", response23);
+            List<string> response21 = new List<string>(new string[] { "Why do you tell me this?" });
+            psychobabble.Add(@"I have(.*)", response21);
 
-            List<string> response24 = new List<string>(new string[] {"Good, tell me more about these feelings." });
-            psychobabble.Add(@"I feel(.*)", response24);
+            List<string> response22 = new List<string>(new string[] { "Why would you?" });
+            psychobabble.Add(@"I would(.*)", response22);
 
-            List<string> response25 = new List<string>(new string[] {"Why do you tell me this?" });
-            psychobabble.Add(@"I have(.*)", response25);
+            List<string> response23 = new List<string>(new string[] { "I am not sure, google it." });
+            psychobabble.Add(@"Is there(.*)", response23);
 
-            List<string> response26 = new List<string>(new string[] {"Could you explain why you would?" });
-            psychobabble.Add(@"I would(.*)", response26);
+            List<string> response24 = new List<string>(new string[] { "see~ see~" });
+            psychobabble.Add(@"My(.*)", response24);
 
-            List<string> response27 = new List<string>(new string[] {"Do you think there is?" });
-            psychobabble.Add(@"Is there(.*)", response27);
+            List<string> response25 = new List<string>(new string[] { "We should be talking about you, not me" });
+            psychobabble.Add(@"You(.*)", response25);
 
-            List<string> response28 = new List<string>(new string[] {"I see." });
-            psychobabble.Add(@"My(.*)", response28);
+            List<string> response26 = new List<string>(new string[] { "Why dont't you tell me the reason" });
+            psychobabble.Add(@"Why(.*)", response26);
 
-            List<string> response29 = new List<string>(new string[] {"We should be discussing you, not me." });
-            psychobabble.Add(@"You(.*)", response29);
+            List<string> response27 = new List<string>(new string[] { "What would it mean to you if you got it?" });
+            psychobabble.Add(@"I want(.*)", response27);
 
-            List<string> response30 = new List<string>(new string[] {"Why don't you tell me the reason why?" });
-            psychobabble.Add(@"Why(.*)", response30);
-
-            List<string> response31 = new List<string>(new string[] {"What would it mean to you if you got it?" });
-            psychobabble.Add(@"I want(.*)", response31);
-
-            List<string> response32 = new List<string>(new string[] {"Tell me more about your mother.." });
-            psychobabble.Add(@"(.*)mother(.*)", response32);
-
-            List<string> response33 = new List<string>(new string[] {"Tell me more about your father." });
-            psychobabble.Add(@"(.*)father(.*)", response33);
-
-            List<string> response34 = new List<string>(new string[] {"Did you have close friends as a child?" });
-            psychobabble.Add(@"(.*)child(.*)", response34);
-
-            List<string> response37 = new List<string>(new string[] {"Please tell me more." });
-            psychobabble.Add(@"(.*)", response37);
+            List<string> response28 = new List<string>(new string[] {"Please tell me more.",
+                                                                     "Let's talk about something else",
+                                                                     "Can you elaborate on that?",
+                                                                     "Why do you say that?",
+                                                                     "I see.",
+                                                                     "I see. And what does that tell you?",
+                                                                     "How do you feel?"});
+            psychobabble.Add(@"(.*)", response28);
 
 
         }

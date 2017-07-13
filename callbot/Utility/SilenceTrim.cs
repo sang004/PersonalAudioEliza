@@ -133,8 +133,8 @@ namespace callbot.utility
 
             // no trim for the beginning
             result[0] = 0;
-            // extend the end of the recording for 30 ms
-            if (result[1] < inList.Count - 6) { result[1] += 5; }
+            // extend the end of the recording for 1 s
+            if (result[1] < inList.Count - 11) { result[1] += 10; }
             else { result[1] = inList.Count - 1; };
             return result;
         }

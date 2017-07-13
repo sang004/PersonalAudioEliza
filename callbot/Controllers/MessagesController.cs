@@ -33,7 +33,7 @@ namespace callbot
                 }
                 else/* if (activity.Text.ToLower().Contains("as"))*/
                 {
-                    string acc = (activity.Text.ToLower()).Split(' ')[1];
+                    string acc = activity.Text.ToLower();
                     BotStateEdit.setUserData(activity, "activeAcc", acc, ref retries);
                 }
             }
