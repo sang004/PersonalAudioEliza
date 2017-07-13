@@ -306,14 +306,13 @@ namespace callbot
                 silenceTimes = 0;
 
 #region RECORD_SAVE
-                if (recordNum < clipNum)//ED.response.Count() + 1)
+                if (recordNum < clipNum)
                 {
                     Debug.WriteLine("#########################SAVING RECORD AT: " + recordPath);
                     MemoryStream ms = new MemoryStream();
                     record.CopyTo(ms);
                     string filePath = string.Format("{0}\\{1}_{2}.wav", recordPath, recordNum, activeAcc);
                     am.ConvertWavStreamToWav(ref ms, filePath);
-                    Trimmer.TrimSilenceEnd(filePath, filePath);
                     recordNum++;
                     if (recordNum < clipNum)
                     {
@@ -332,7 +331,7 @@ namespace callbot
                         };
                     }
                 }
-                else if (recordNum == clipNum)
+                if (recordNum == clipNum)
                 {
                     DirectoryInfo dir = new DirectoryInfo(recordPath);
     
@@ -341,7 +340,9 @@ namespace callbot
                         foreach (var file in dir.GetFiles("*.wav"))
                         {
                             Debug.WriteLine(file.ToString());
-                            string azureUrl = am.azureFunc(recordPath + "\\" + file.ToString());
+                            string filePath = recordPath + "\\" + file.ToString();
+                            Trimmer.TrimSilenceEnd(filePath, filePath);
+                            string azureUrl = am.azureFunc(filePath);
                             Debug.WriteLine("*********" + azureUrl);
                             if (azureUrl != "")
                             {

@@ -20,7 +20,7 @@ namespace callbot.Dialogs
             @"Can you(.*)", @"Can I(.*)", @"You are(.*)", @"I don'?t(.*)", @"I feel(.*)", @"I have(.*)", @"I would(.*)", @"Is there(.*)",
             @"My(.*)", @"You(.*)", @"Why(.*)", @"I want(.*)", @"(.*)"});
 
-        public List<string> response = new List<string>(new string[37] {
+        public List<string> response = new List<string>(new string[36] {
                                                                       "Why do you need that?",
 
                                                                       "Don't temp me",
@@ -34,8 +34,6 @@ namespace callbot.Dialogs
                                                                       "Why does it matter?",
 
                                                                       "Why do you ask?",
-
-                                                                      "Why does it matter",
 
                                                                        "Is that the real reason?",
 
@@ -127,7 +125,7 @@ namespace callbot.Dialogs
             List<string> response7 = new List<string>(new string[] { "Why do you ask?" });
             psychobabble.Add(@"What(.*)", response7);
 
-            List<string> response8 = new List<string>(new string[] { "Why does it matter" });
+            List<string> response8 = new List<string>(new string[] { "Why does it matter?" });
             psychobabble.Add(@"How(.*)", response8);
 
             List<string> response9 = new List<string>(new string[] { "Is that the real reason?" });
