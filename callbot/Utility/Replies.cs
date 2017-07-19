@@ -15,7 +15,7 @@ namespace callbot.utility
         public static PlayPrompt PlayAudioFile(string audioPath)
         {
 
-            //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
+            // example will be "https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav"
             System.Uri uri = new System.Uri(audioPath);
 
             var prompt = new Prompt { FileUri = uri };

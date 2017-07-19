@@ -31,7 +31,7 @@ namespace callbot
                 {
                     BotStateEdit.setUserData(activity, "activeMode", activity.Text.ToLower(), ref retries);
                 }
-                else/* if (activity.Text.ToLower().Contains("as"))*/
+                else
                 {
                     string acc = activity.Text.ToLower();
                     BotStateEdit.setUserData(activity, "activeAcc", acc, ref retries);
@@ -39,8 +39,6 @@ namespace callbot
             }
             else
             {
-                //postReply(activity, "I am ignoring you");
-                //HandleSystemMessage(activity);
                 var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
                 Activity reply = activity.CreateReply("I have my answers, I am ignoring you");
                 reply.Speak = "I have my answers, I am ignoring you";

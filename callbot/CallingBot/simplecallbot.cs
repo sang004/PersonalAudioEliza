@@ -17,7 +17,7 @@ using callbot.utility;
 
 namespace callbot
 {
-    public class simplecallbot : ICallingBot
+    public class simplecallbot : IDisposable, ICallingBot
     {
         public ICallingBotService CallingBotService
         {
@@ -29,14 +29,7 @@ namespace callbot
         private string activeMode = null;
         private bool isSet;
         int silenceTimes = 0;
-
-        private string microsoftAppId { get; } = ConfigurationManager.AppSettings["MicrosoftAppId"];
-        private string microsoftAppPassword { get; } = ConfigurationManager.AppSettings["MicrosoftAppPassword"];
-
-        static string user = ConfigurationManager.AppSettings["RSId"];
-        static string private_key = ConfigurationManager.AppSettings["RSPassword"];
-        RSAPI rsapi = new RSAPI(user, private_key);
-        
+               
         string serviceUrl = "https://smba.trafficmanager.net/apis/";
         private MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
 
@@ -52,7 +45,6 @@ namespace callbot
         private static audioMan am = new audioMan();
         private SilenceTrim Trimmer = new SilenceTrim();
         private RSAPI RS = new RSAPI(ConfigurationManager.AppSettings["RSId"], ConfigurationManager.AppSettings["RSPassword"]);
-        //RS. ConfigurationManager.AppSettings("RSId", ConfigurationManager.AppSettings("RSPassword");
 
         public simplecallbot(ICallingBotService callingBotService)
         {
@@ -65,6 +57,18 @@ namespace callbot
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
             CallingBotService.OnRecordCompleted += OnRecordCompleted;
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
+        }
+
+        // dispose garbage
+        public void Dispose()
+        {
+            if (this.CallingBotService != null)
+            {
+                CallingBotService.OnIncomingCallReceived -= OnIncomingCallReceived;
+                CallingBotService.OnPlayPromptCompleted -= OnPlayPromptCompleted;
+                CallingBotService.OnRecordCompleted -= OnRecordCompleted;
+                CallingBotService.OnHangupCompleted -= OnHangupCompleted;
+            }
         }
 
         private Task<bool> OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
@@ -137,7 +141,7 @@ namespace callbot
 
                     if (activeMode == "record")
                     {
-                        int noOfClips = await rsapi.isExist(activeAcc);
+                        int noOfClips = await RS.isExist(activeAcc);
                         if (noOfClips > 0)
                         {
                             int retries = 0;
@@ -274,6 +278,9 @@ namespace callbot
             //logger.uploadToRS();
             Debug.WriteLine("###################Hanging up");
 
+            activeAcc = null;
+            activeMode = null;
+
             //remove the persistent variables first
             int retries = 0;
             BotStateEdit.removeUserData(participant, "activeMode", ref retries);
@@ -291,7 +298,7 @@ namespace callbot
             }
             else
             {
-                CallOnRecordCompleted(recordOutcomeEvent);
+                await CallOnRecordCompleted(recordOutcomeEvent);
             }
         }
             
@@ -526,7 +533,7 @@ namespace callbot
 
             string audioKeyword = ElizaIdx + "_" + activeAcc;
 
-            string path = rsapi.Call(audioKeyword).Result;
+            string path = RS.Call(audioKeyword).Result;
             if (!path.Equals(""))
             {
                 return Replies.PlayAudioFile(path);
@@ -547,7 +554,7 @@ namespace callbot
             }
             string audioKeyword = ElizaIdx + "_" + activeAcc;
 
-            string path = rsapi.Call(audioKeyword).Result;
+            string path = RS.Call(audioKeyword).Result;
             if (!path.Equals(""))
             {
                 return Replies.PlayAudioFile(path);

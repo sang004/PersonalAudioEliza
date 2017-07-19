@@ -224,7 +224,7 @@ namespace callbot
             {
                 jsonList = JsonConvert.DeserializeObject<List<searchResult>>(jsonResponse);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Debug.WriteLine("======Could not find audio in RS");
                 return 0;
@@ -292,9 +292,7 @@ namespace callbot
         }
 
     }
-
     
-
     /// <summary>
     /// Form the parameters string.
     /// </summary>
@@ -310,8 +308,6 @@ namespace callbot
 
         public string DoSearch( string searchStr, string resTypes ) {
             string orderby = "relevance";
-            string archive = "0";
-            string fetchrows = "";
             string sort = "desc";
 
             parameters = String.Format("param1={0}&param2={1}&param3={2}&param6={3}",

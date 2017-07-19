@@ -154,12 +154,6 @@
   <ItemGroup>
     <Content Include="default.htm" />
     <Content Include="Global.asax" />
-    <Content Include="libmp3lame.32.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="libmp3lame.64.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -172,13 +166,11 @@
     <Compile Include="CallingBot\audioMan.cs" />
     <Compile Include="CallingBot\BingSpeech.cs" />
     <Compile Include="Utility\BotStateEdit.cs" />
-    <Compile Include="CallingBot\BotToUserSpeech.cs" />
     <Compile Include="CallingBot\ConversationTranscibe.cs" />
     <Compile Include="CallingBot\RSAPI.cs" />
     <Compile Include="Controllers\CallingController.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Dialogs\ElizaDialog.cs" />
-    <Compile Include="Dialogs\LuisDialog.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
