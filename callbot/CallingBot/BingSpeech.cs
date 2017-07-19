@@ -78,7 +78,7 @@ namespace callbot
 
         }
 
-        private async void OnDataShortPhraseResponseReceivedHandler(object sender, SpeechResponseEventArgs e)
+        private void OnDataShortPhraseResponseReceivedHandler(object sender, SpeechResponseEventArgs e)
         {
 
             this.WriteLine("--- OnDataShortPhraseResponseReceivedHandler ---");
@@ -91,83 +91,14 @@ namespace callbot
             // Send to bot
             if (e.PhraseResponse.RecognitionStatus == RecognitionStatus.RecognitionSuccess)
             {
-                //await SendToBot(e.PhraseResponse.Results[0]);
                 _failedCallback(false);
                 _bingresponse(e.PhraseResponse.Results[0].DisplayText);
-
-                //await SendToBot(e.PhraseResponse.Results.OrderBy(k => k.Confidence).Last());
-                //responseJson = e.PhraseResponse.Results.OrderBy(k => k.Confidence).FirstOrDefault().DisplayText;
-                //Debug.WriteLine("responseJson");
-                //Debug.WriteLine(responseJson);
             }
             else
             {
                 _failedCallback(true);
                 _bingresponse("");
             }
-        }
-
-        private async Task SendToBot(RecognizedPhrase recognizedPhrase)
-        {
-            Activity activity = new Activity()
-            {
-                From = new ChannelAccount { Id = conversationResult.Id },
-                Conversation = new ConversationAccount { Id = conversationResult.Id },
-                Recipient = new ChannelAccount { Id = "dev_callbot" },
-
-                ServiceUrl = "https://skype.botframework.com",
-                ChannelId = "skype",
-            };
-            activity.Text = recognizedPhrase.DisplayText;
-            //_bingresponse(activity.Text);
-            ////TEST START
-
-            //LUISResponse luisResponse = new LUISResponse();
-            //string question = "call shimin";
-            //string contextId = "";
-            //Task.Run(async () =>
-            //{
-
-            //    luisResponse = await askLUIS(question, contextId);
-            //    Debug.WriteLine(JsonConvert.SerializeObject(luisResponse));
-
-            //}).Wait();
-
-            //while (luisResponse?.dialog?.prompt?.Length > 0)
-            //{
-            //    Debug.WriteLine(luisResponse.dialog.prompt + "  ");
-            //    contextId = luisResponse.dialog.contextId;
-
-            //    Task.Run(async () =>
-            //    {
-            //        luisResponse = await askLUIS(question, contextId);
-            //        Debug.WriteLine(JsonConvert.SerializeObject(luisResponse));
-
-            //    }).Wait();
-            //}
-            //Debug.WriteLine("dasdsasddsa:");
-            //Debug.WriteLine(JsonConvert.SerializeObject(luisResponse));
-
-            ////TEST END
-
-            //ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-            //await connector.Conversations.SendToConversationAsync(activity);
-
-            //using (var scope = Microsoft.Bot.Builder.Dialogs.Conversation
-            //    .Container.BeginLifetimeScope(DialogModule.LifetimeScopeTag, Configure))
-            //{
-            //    scope.Resolve<IMessageActivity>(TypedParameter.From((IMessageActivity)activity));
-            //    DialogModule_MakeRoot.Register(scope, () => new Dialogs.ElizaDialog());
-            //    var postToBot = scope.Resolve<IPostToBot>();
-            //    await postToBot.PostAsync(activity, CancellationToken.None);   
-            //}
-        }
-
-        private void Configure(ContainerBuilder builder)
-        {
-            builder.Register(c => new BotToUserSpeech(c.Resolve<IMessageActivity>(), _callback))
-                .As<IBotToUser>()
-                .InstancePerLifetimeScope();
         }
 
         private void WriteResponseResult(SpeechResponseEventArgs e)
@@ -191,14 +122,6 @@ namespace callbot
                 this.WriteLine(string.Empty);
             }
 
-            // if bing does not return anything
-            //if (e.PhraseResponse.Results.Length > 0)
-            //{
-            //    _bingresponse(e.PhraseResponse.Results[0].DisplayText);
-            //}
-            //else {
-            //    _bingresponse("");
-            //}
         }
 
         private void WriteLine(string format, params object[] args)

@@ -1,14 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
-using Microsoft.Bot.Builder.Dialogs;
-using callbot.Dialogs;
+using System.Diagnostics;
+using System;
 
 namespace callbot
 {
@@ -21,11 +17,13 @@ namespace callbot
         /// </summary>
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            
-            
             if (activity.Type == ActivityTypes.Message)
             {
-                await Conversation.SendAsync(activity, () => new LuisDialog());
+                Debug.WriteLine("===============User texted me");
+                var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+                Activity reply = activity.CreateReply($"{activity.Text}? I have my answers, I am ignoring you");
+                await connector.Conversations.ReplyToActivityAsync(reply);
+                
             }
             else
             {

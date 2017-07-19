@@ -8,13 +8,9 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Configuration;
 
-using SSS = System.Speech.Synthesis;
-using System.IO;
-using System.Diagnostics;
-
 namespace callbot
 {
-    public class simplecallbot : ICallingBot
+    public class simplecallbot : IDisposable ,ICallingBot
     {
         public ICallingBotService CallingBotService
         {
@@ -26,44 +22,55 @@ namespace callbot
 
         bool sttFailed = false;
         string bingresponse = "";
-        //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
+        static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file on Microsoft Azure storage
         private Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
-        private static audioMan am = new audioMan();
         
         public simplecallbot(ICallingBotService callingBotService)
         {
-
             if (callingBotService == null)
                 throw new ArgumentNullException(nameof(callingBotService));
 
             this.CallingBotService = callingBotService;
             
-
             CallingBotService.OnIncomingCallReceived += OnIncomingCallReceived;
             CallingBotService.OnPlayPromptCompleted += OnPlayPromptCompleted;
             CallingBotService.OnRecordCompleted += OnRecordCompleted;
             CallingBotService.OnHangupCompleted += OnHangupCompleted;
         }
 
+        // dispose garbage
+        public void Dispose()
+        {
+            if (this.CallingBotService != null)
+            {
+                CallingBotService.OnIncomingCallReceived -= OnIncomingCallReceived;
+                CallingBotService.OnPlayPromptCompleted -= OnPlayPromptCompleted;
+                CallingBotService.OnRecordCompleted -= OnRecordCompleted;
+                CallingBotService.OnHangupCompleted -= OnHangupCompleted;
+            }
+        }
+
+        // initiated only once when a user calls the bot, bot decides whether to answer by "new Answer" action
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
             var id = Guid.NewGuid().ToString();
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
                     new Answer { OperationId = id },
-                    GetRecordForText("Top of the day to you!", 2)
+                    GetRecordForText("Hello, good to see you today!")
                 };
 
             return Task.FromResult(true);
         }
 
-        private ActionBase GetRecordForText(string promptText, int mode)
+        // bot speaks and then waits for recording
+        private ActionBase GetRecordForText(string promptText)
         {
             PlayPrompt prompt;
             if (string.IsNullOrEmpty(promptText))
                 prompt = null;
             else
-                prompt = GetPromptForText(promptText, mode);
+                prompt = GetPromptForText(promptText);
             var id = Guid.NewGuid().ToString();
 
             return new Record()
@@ -85,14 +92,17 @@ namespace callbot
             
             if (bingresponse != "")
             {
+                // log user response
+                logger.WriteToText("USER: ", bingresponse);
+
                 silenceTimes = 0;
 
-                // if its bye
+                // if user says bye bye, end voice conversation
                 if (bingresponse.ToLower().Contains("bye"))
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("This has been a great session! Bye bye.", 2),
+                        GetPromptForText("This has been a great session! Bye bye."),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -101,21 +111,10 @@ namespace callbot
                 }
                 else
                 {
-
                     //else identify words
                     string output = await ED.Reply(bingresponse);
                     
-#if RELEASE
-                    //use bot framework voice, mode -1
-                    Debug.WriteLine($"Bing response: {output}");
-                    actionList.Add(GetRecordForText(output, -1));
-
-
-#else
-                    //microsoft stt, mode 2
-                    actionList.Add(GetRecordForText(output, 2));
-#endif
-                    //actionList.Add(GetRecordForText(string.Empty, -1));
+                    actionList.Add(GetRecordForText(output));
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = actionList;
                 }
                 bingresponse = "";
@@ -127,7 +126,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?", 2)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?")
                     };
                     sttFailed = false;
                     silenceTimes++;
@@ -137,7 +136,7 @@ namespace callbot
                 {
                     playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Is anybody there? Bye.",2),
+                        GetPromptForText("Is anybody there? Bye."),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     playPromptOutcomeEvent.ResultingWorkflow.Links = null;
@@ -155,9 +154,8 @@ namespace callbot
             }
             return Task.CompletedTask;
         }
-
-
-
+        
+        // called once a record action is done
         private async Task OnRecordCompleted(RecordOutcomeEvent recordOutcomeEvent)
         {
             // When recording is done, send to BingSpeech to process
@@ -165,11 +163,11 @@ namespace callbot
             {
 #if DEBUG
                 //TEST AUDIO START
-                ///Retrieve random audio            
+                ///Retrieve audio from RS server to quick debugging          
                 string user = ConfigurationManager.AppSettings["RSId"];
                 string private_key = ConfigurationManager.AppSettings["RSPassword"];
                 
-                string replyAudioPath = "http://ec2-54-255-210-15.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
+                string replyAudioPath = "http://ec2-13-228-78-239.ap-southeast-1.compute.amazonaws.com/filestore/4_6243e7460bb03de/4_89e60a9e2072f2e.wav";
 
                 var webClient = new WebClient();
                 byte[] bytes = webClient.DownloadData(replyAudioPath);
@@ -205,7 +203,7 @@ namespace callbot
                 {
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetPromptForText("Bye bye!",2),
+                        GetPromptForText("Bye bye!"),
                         new Hangup() { OperationId = Guid.NewGuid().ToString() }
                     };
                     recordOutcomeEvent.ResultingWorkflow.Links = null;
@@ -216,103 +214,55 @@ namespace callbot
                     silenceTimes++;
                     recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                     {
-                        GetRecordForText("I didn't catch that, would you kindly repeat?",2)
+                        GetRecordForText("I didn't catch that, would you kindly repeat?")
                     };
                 }
             }
             
         }
 
+        // method when "Hangup()" is called, terminates current voice conversation
         private Task OnHangupCompleted(HangupOutcomeEvent hangupOutcomeEvent)
         {
-            //logger.uploadToRS();
+
             hangupOutcomeEvent.ResultingWorkflow = null;
             return Task.FromResult(true);
         }
 
-        // TEST playback
-        private static PlayPrompt PlayAudioFile(string audioPath)
+        private static PlayPrompt GetPromptForText(string text)
         {
+            // log bot response
+             logger.WriteToText("BOT: ", text);
 
-            //System.Uri uri = new System.Uri("https://callbotstorage.blob.core.windows.net/blobtest/graham_any_nation.wav");
-            System.Uri uri = new System.Uri(audioPath);
-            
-            var prompt = new Prompt { FileUri = uri };
-            return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
+             var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
+             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
 
-        private static PlayPrompt GetPromptForText(string text, int mode)
-        {
 
-            System.Uri uri;
-            //logger.WriteToText("BOT: ", text);
-            if (mode == 1)
-            {
-                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/7_36cabf597b6f9db/87_4f2bd3c2b2825fc.wav");
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else if (mode == 0)
-            {
-                uri = new System.Uri("http://bitnami-resourcespace-b0e4.cloudapp.net/filestore/8/5_1b312f7bcb5fbc6/85_0edca2f3cccad42.wav");
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else if (mode == -2)
-            {
-                // Configure the audio output. 
-                MemoryStream ms = new MemoryStream();
-                SSS.SpeechSynthesizer synth = new SSS.SpeechSynthesizer();
-                
-                string tempPath = Path.GetTempPath();
-                synth.SetOutputToWaveStream(ms);
-                synth.Speak(text);
-                
-                ////now convert to mp3 using LameEncoder or shell out to audiograbber
-                am.ConvertWavStreamToWav(ref ms, $"{tempPath}Rate.wav");
-
-                uri = new System.Uri(am.azureUrl);
-
-                var prompt = new Prompt { FileUri = uri };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-
-
-            }
-            else {
-                var prompt = new Prompt { Value = text, Voice = VoiceGender.Female };
-                return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
-            }
-        }
-
+        // chains up a list of string to voice out synthetically
         private static PlayPrompt GetPromptForText(List<string> text)
         {
             var prompts = new List<Prompt>();
             foreach (var txt in text)
             {
-                //logger.WriteToText("BOT: ", txt);
+                logger.WriteToText("BOT: ", txt);
 
                 if (!string.IsNullOrEmpty(txt))
                     prompts.Add(new Prompt { Value = txt, Voice = VoiceGender.Female });
             }
             if (prompts.Count == 0)
                 return GetSilencePrompt();
+
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = prompts };
         }
 
+        // create a prompt that is silence, keeps data flow going
         private static PlayPrompt GetSilencePrompt(uint silenceLengthInMilliseconds = 800)
         {
             var prompt = new Prompt { Value = string.Empty, Voice = VoiceGender.Female, SilenceLengthInMilliseconds = silenceLengthInMilliseconds };
             return new PlayPrompt { OperationId = Guid.NewGuid().ToString(), Prompts = new List<Prompt> { prompt } };
         }
     }
-
-
 }
 
 

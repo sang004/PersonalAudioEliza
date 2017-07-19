@@ -1,17 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
-using System.Text;
 
-using System.Diagnostics;
-
-// Using statements for our libraries.
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Web;
 
 namespace callbot
 {
@@ -40,6 +33,7 @@ namespace callbot
             // Build my typical log file name.
             DateTime date = DateTime.Today;
             DateTime dateLogEntry = DateTime.Now;
+
             // This creates a reference to the append blob we are going to use.
             fileName = string.Format("{0}{1}", date.ToString("yyyyMMdd_HHmm"), ".txt");
             appBlob = container.GetAppendBlobReference(fileName);
@@ -61,19 +55,6 @@ namespace callbot
             {
                 throw;
             }
-        }
-
-        public void uploadToRS()
-        {
-            string localfile = saveAsLocal();
-
-            string user = ConfigurationManager.AppSettings["RSId"];
-            string private_key = ConfigurationManager.AppSettings["RSPassword"];
-            
-            RSAPI rs = new RSAPI(user, private_key);
-            string fileTitle = "ConversationLog_" + appBlob.Name;
-
-            rs.UploadResource(localfile, fileTitle);
         }
 
         public string saveAsLocal() {
