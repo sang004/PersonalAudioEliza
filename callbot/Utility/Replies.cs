@@ -29,16 +29,12 @@ namespace callbot.utility
         }
 
         // generate a Hero card with call or record button
-        public static void GenResponseCard(IEnumerable<Participant> participant)
+        public static void GenResponseCard(IEnumerable<Participant> participant, ConnectorClient connector)
         {
 
-            string serviceUrl = "https://smba.trafficmanager.net/apis/";
-            MicrosoftAppCredentials account = new MicrosoftAppCredentials(ConfigurationManager.AppSettings["MicrosoftAppId"], ConfigurationManager.AppSettings["MicrosoftAppPassword"]);
 
             string recipientId = participant.ElementAt(0).Identity;
             string botId = participant.ElementAt(1).Identity;
-            MicrosoftAppCredentials.TrustServiceUrl(serviceUrl, DateTime.Now.AddDays(7));
-            ConnectorClient connector = new ConnectorClient(new Uri(serviceUrl), account);
 
             List<CardAction> cardButtons = new List<CardAction>();
 

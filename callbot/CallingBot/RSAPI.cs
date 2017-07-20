@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
 
-using WinSCP;
+using Renci.SshNet;
+using System.IO;
 using Newtonsoft.Json;
 using System.Configuration;
 
@@ -76,13 +77,12 @@ namespace callbot
         }
 
         /// <summary>
-        /// Create a resource, upload the file to RS (with url of the file), attach it to a resource id,
+        /// Create a resource id, attach a local file to the resource id,
         /// add the resource to a collection, update title and date for the uploaded file.
         /// </summary>
-        /// <param name="fileUrl">Original file url</param>
-        /// <remark>The original file to be uploaded by this function has to be on the same server where ResourceSpace
-        /// is installed.</remark>
-        public async void UploadResource(string fileUrl, string title, string extension)
+        /// <param name="filePath">Original file path</param>
+        /// <remark>The file path on RS server</remark>
+        public async void UploadResource(string filePath, string title, string extension)
         {
             string resourceType = "";
             string collectionId = "";
@@ -98,13 +98,9 @@ namespace callbot
                 collectionId = "5";
             }
 
-            // get sftp path on resource space server
-            //string rsPath = sstpProtocol(filePath);
-
-            Debug.WriteLine("............extension: " + extension + " resourceType: " + resourceType);
             string resourceId = await CallAPI("create_resource", parameter.CreateResource(resourceType));
             Debug.WriteLine("............resourceId: " + resourceId);
-            string uploadSuccess = await CallAPI("upload_file_by_url", parameter.UploadFile(resourceId, fileUrl));
+            string uploadSuccess = await CallAPI("upload_file", parameter.UploadFile(resourceId, filePath));
 
             if (uploadSuccess.Equals("true"))
             {
@@ -234,65 +230,11 @@ namespace callbot
                 return 0;
             }
             return jsonList.Count;
-        } 
-
-        public string sstpProtocol( string local_filePath )
-        {
-            string fileExtension = local_filePath.Split('.').Last();
-            string remote_fileName = "";
-            string remote_filePath = "";
-            string DatetimeFormat;
-
-            DatetimeFormat = "yyyy-MM-dd_HH-mm";
-            remote_fileName = "ChatLog_" + DateTime.Now.ToString(DatetimeFormat) + "." + fileExtension;
-            remote_filePath = $"/home/bitnami/test/{remote_fileName}";
-
-            try
-            {
-                // Setup session options
-                SessionOptions sessionOptions = new SessionOptions
-                {
-                    Protocol = Protocol.Sftp,
-                    HostName = "52.187.186.3",
-                    UserName = "bitnami",
-                    Password = "8dyZ!B)-4JM}",
-                    SshHostKeyFingerprint = "ssh-rsa 2048 c4:0b:99:e9:53:a4:1a:af:24:e1:8c:f5:44:a7:13:ff"
-                };
-
-                using (Session session = new Session())
-                {
-                    // Connect
-                    session.Open(sessionOptions);
-
-                    // Upload files
-                    TransferOptions transferOptions = new TransferOptions();
-                    transferOptions.TransferMode = TransferMode.Binary;
-
-                    TransferOperationResult transferResult;
-                    transferResult = session.PutFiles(local_filePath, remote_filePath, false, transferOptions);
-
-                    // Throw on any error
-                    transferResult.Check();
-
-                    // Print results
-                    foreach (TransferEventArgs transfer in transferResult.Transfers)
-                    {
-                        Console.WriteLine("Upload of {0} succeeded", transfer.FileName);
-                    }
-                }
-
-                return remote_filePath;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error: {0}", e);
-                return "Error" ;
-            }
-
         }
-
     }
+
     
+
     /// <summary>
     /// Form the parameters string.
     /// </summary>
@@ -392,4 +334,79 @@ namespace callbot
         public string file_extension { get; set; }
         public string file_path { get; set; }
     }
+
+    public class sftp
+    {   
+        private static string destinationPath = ConfigurationManager.AppSettings["RSSftpDestination"];
+        private static string host = ConfigurationManager.AppSettings["RSHost"];
+        private static string username = ConfigurationManager.AppSettings["RSSftpUsername"];
+        private static string password = ConfigurationManager.AppSettings["RSSftpPassword"];
+        private static int port = 22;
+        
+        /// <summary>
+        /// Sftp upload the .wav file under the file folder to server
+        /// </summary>
+        /// <param name="sourceFileFolder"></param>
+        public static bool UploadSFTPFile(string sourceFileFolder)
+        {
+            DirectoryInfo dir = new DirectoryInfo(sourceFileFolder);
+
+            try
+            {
+                using (SftpClient client = new SftpClient(host, port, username, password))
+                {
+                    client.Connect();
+                    client.ChangeDirectory(@destinationPath);
+                    foreach (var file in dir.GetFiles("*.wav"))
+                    {
+                        string sourcefile = sourceFileFolder + "\\" + file.ToString();
+                        using (FileStream fs = new FileStream(sourcefile, FileMode.Open))
+                        {
+                            client.BufferSize = 40 * 1024;
+                            Debug.WriteLine("........ file:" + sourcefile);
+                            client.UploadFile(fs, Path.GetFileName(sourcefile));
+                        }
+                    }
+                    client.Disconnect();
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Sftp delete the .wav file under the file folder to server
+        /// </summary>
+        /// <param name="sourceFileFolder"></param>
+        public static bool DeleteSFTPFile(string sourceFileFolder)
+        {
+            DirectoryInfo dir = new DirectoryInfo(sourceFileFolder);
+
+            try
+            {
+                using (SftpClient client = new SftpClient(host, port, username, password))
+                {
+                    client.Connect();
+                    client.ChangeDirectory(destinationPath);
+                    foreach (var file in dir.GetFiles("*.wav"))
+                    {
+                        string sourcefile = sourceFileFolder + "\\" + file.ToString();
+                        client.BufferSize = 40 * 1024;
+                        client.DeleteFile(Path.GetFileName(sourcefile));
+                    }
+                    client.Disconnect();
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+    }
 }
+
+            
