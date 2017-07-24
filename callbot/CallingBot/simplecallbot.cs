@@ -43,7 +43,7 @@ namespace callbot
         private string recordPath = "";
         //static ConversationTranscibe logger = new ConversationTranscibe(); // Will create a fresh new log file
         private static Dialogs.ElizaDialog ED = new Dialogs.ElizaDialog();
-        private static int clipNum = 5;//ED.response.Count;
+        private static int clipNum = ED.response.Count;
         private static audioMan am = new audioMan();
         private SilenceTrim Trimmer = new SilenceTrim();
         private RSAPI RS = new RSAPI(ConfigurationManager.AppSettings["RSId"], ConfigurationManager.AppSettings["RSPassword"]);
@@ -194,22 +194,34 @@ namespace callbot
             }
         }
 
-        private Task RecordOnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
+        private async Task RecordOnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
-            if (recordNum == -1)
+            if (recordNum <= clipNum)
             {
-                // create a directory in the appdata temp folder to temporary store audio on local
-                recordPath = Path.GetTempPath() + activeAcc.ToString();
-                Directory.CreateDirectory(recordPath);
+                if (recordNum == -1)
+                {
+                    // create a directory in the appdata temp folder to temporary store audio on local
+                    recordPath = Path.GetTempPath() + activeAcc.ToString();
+                    Directory.CreateDirectory(recordPath);
 
-                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                { Replies.GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    { Replies.GetRecordForText("Recording. Please read out the sentence after you received the message and heared the beep.", silenceTimeout: 2) };
+                }
+                else if (recordNum == clipNum)
+                {
+                    recordNum++;
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
+                    {
+                        await UploadToRs(recordPath),
+                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
+                    };
+                    playPromptOutcomeEvent.ResultingWorkflow.Links = null;
+                }
+                else
+                {
+                    playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForMessage() };
+                }
             }
-            else
-            {
-                playPromptOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase> { Replies.GetRecordForMessage() };
-            }
-            return Task.CompletedTask;
         }
 
         private async Task CallOnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
@@ -223,7 +235,6 @@ namespace callbot
                     Replies.GetPromptForText($"Transferring call to {activeAcc}!"),
                     await TextToAudio("Hi!"),
                     Replies.GetRecordForText(string.Empty)
-
                 };
                 silenceTimes = 0;
                 recordNum++;
@@ -353,19 +364,9 @@ namespace callbot
                     {
                         recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
                         {
-                            Replies.GetRecordForText("Record completed, uploading recording!Please do not hangup!")
+                            Replies.GetPromptForText("Record completed, uploading recording!Please do not hangup!")
                         };
                     }
-                }
-                else if (recordNum == clipNum)
-                {
-                    recordNum++;
-                    recordOutcomeEvent.ResultingWorkflow.Actions = new List<ActionBase>
-                    {
-                        await UploadToRs(recordPath),
-                        new Hangup() { OperationId = Guid.NewGuid().ToString() }
-                    };
-                    recordOutcomeEvent.ResultingWorkflow.Links = null;
                 }
                 #endregion
             }
