@@ -1,4 +1,4 @@
-# Phone Bot Type_1
+# CustomAudioEliza
 This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory! Bot has 2 modes, either record or converse, the diagram below shows an overview of the process:  
 ![image](https://user-images.githubusercontent.com/8624828/27902957-3fa4728a-626a-11e7-8bbb-a6900a336494.png)
 
