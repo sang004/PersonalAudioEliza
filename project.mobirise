@@ -1,7 +1,7 @@
 {
   "settings": {
     "name": "CustomAudioEliza",
-    "currentPage": "page2.html",
+    "currentPage": "user_guide.html",
     "versionFirst": "4.0.14",
     "uniqCompNum": 69,
     "versionPublish": "4.0.17",
@@ -44,7 +44,7 @@
     "index.html": {
       "settings": {
         "main": true,
-        "title": "Privacy_Policy",
+        "title": "Privacy Policy",
         "meta_descr": "",
         "header_custom": "",
         "footer_custom": "",
@@ -636,7 +636,7 @@
         }
       ]
     },
-    "page2.html": {
+    "user_guide.html": {
       "settings": {
         "meta_descr": "",
         "title": "User Guide",
