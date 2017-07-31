@@ -1,5 +1,17 @@
-# CustomAudioEliza
-This is a vocal version of the good old Eliza callbot, now more accessible than ever on Skype bot directory! Bot has 2 modes, either record or converse, the diagram below shows an overview of the process:  
+# Personal Audio Eliza  
+When the original ELIZA first appeared in the 60's, some people actually mistook her for human. The illusion of intelligence works best, however, if you limit your conversation to talking about yourself and your life. It was text-based however, which was quite convincing during the age of IRC chatrooms and such.  
+It takes your sentence and reflects it into a question through string substitution and pattern matching. Transforming "Tell me what you think about me" into "You want me to tell you what I think about you?" creating a simple illusion of understanding.  
+This project brings speech (Bing Speech) to Eliza through the high accessibility of Skype similar to ‘AudioEliza’<hyperlink>, but with a twist. Customized Audio Eliza has a mode to record an individual’s voice as a profile and use that profile to talk back.   
+To start chat, click on our live link to add the bot to your Skype contacts:  
+
+__Step 1__: call it  
+__Step 2__: Choose either call / record on the rich card  
+__Step 3__: Type in the name of the profile you wish to record as or talk to  
+
+__Record mode__: Wait for the sentences to appear in messaging box and say the sentence or anything you would like. It will take around 7mins of your life, once done, stay on the line until it says, “upload completed”. (Do contact us at proj_call@outlook.com if you want your clips removed after trying, we are very friendly.)  
+
+__Call mode__: Be moderately amazed that you are talking to your own voice or someone else’s! To end the call just say “bye” or click on “End call”  
+
 ![image](https://user-images.githubusercontent.com/8624828/27902957-3fa4728a-626a-11e7-8bbb-a6900a336494.png)
 
 ## Table of Content
@@ -11,7 +23,6 @@ This is a vocal version of the good old Eliza callbot, now more accessible than 
 [Azure installation](#azure)  
 [Authors](#authors)  
 [License](#license)  
-[Built With](#built-with)  
 
 ## Getting Started
 
@@ -164,6 +175,3 @@ Please read [CONTRIBUTING.md]() for details on our code of conduct, and the proc
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
