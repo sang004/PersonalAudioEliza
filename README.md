@@ -3,7 +3,7 @@ When the original ELIZA first appeared in the 60's, some people actually mistook
 
 It takes your sentence and reflects it into a question through string substitution and pattern matching. Transforming "Tell me what you think about me" into "You want me to tell you what I think about you?" creating a simple illusion of understanding. 
 
-This project brings speech (Bing Speech) to Eliza through the high accessibility of Skype similar to ‘AudioEliza’<hyperlink>, but with a twist. Personal Audio Eliza has a mode to record an individual’s voice as a profile and use that profile to talk back.  
+This project brings speech (Bing Speech) to Eliza through the high accessibility of Skype similar to the previous iteration, [‘Audio Eliza’](https://github.com/sang004/AudioEliza), but with a twist. Personal Audio Eliza has a mode to record an individual’s voice as a profile and use that profile to talk back.  
 
 To start chat, click on our live link to add the bot to your Skype contacts:  
 [![Add the bot](https://user-images.githubusercontent.com/8290469/28764707-816c05dc-75f9-11e7-83b0-a37abae0cf49.jpg)](https://join.skype.com/bot/b0179619-fe22-4cbf-a5a9-c927d06b30bc)
@@ -27,6 +27,7 @@ __Call mode__: Be moderately amazed that you are talking to your own voice or so
 [Azure installation](#azure)  
 [Authors](#authors)  
 [License](#license)  
+[Developer guide](https://github.com/sang004/PersonalAudioEliza/wiki)
 
 ## Getting Started
 
